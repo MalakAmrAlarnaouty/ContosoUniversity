@@ -1,8 +1,10 @@
-
+using ContosoUniversity.Data;
+using ContosoUniversity.Models;
+using ContosoUniversity.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ContosoUniversity.Models;
-using ContosoUniversity.Data;
+
+namespace ContosoUniversity.Controllers;
 
 public class StudentsController : Controller
 {
@@ -13,138 +15,260 @@ public class StudentsController : Controller
         _context = context;
     }
 
-    // GET: STUDENTS
-    public async Task<IActionResult> Index()    
+    // GET: Students
+    public async Task<IActionResult> Index()
     {
-        return View(await _context.Students.ToListAsync());
+        List<Student> students = await _context.Students
+            .AsNoTracking()
+            .Include(student => student.Enrollments)
+            .ThenInclude(enrollment => enrollment.Course)
+            .OrderBy(student => student.LastName)
+            .ThenBy(student => student.FirstMidName)
+            .ToListAsync();
+
+        // Used inside the Edit Student modal.
+        ViewBag.AllCourses = await _context.Courses
+            .AsNoTracking()
+            .Include(course => course.Enrollments)
+            .OrderBy(course => course.Title)
+            .ToListAsync();
+
+        return View(students);
     }
 
-    // GET: STUDENTS/Details/5
-    public async Task<IActionResult> Details(int? id)
+    // GET: Students/Create
+    public async Task<IActionResult> Create()
     {
-        if (id == null)
+        CreateStudentViewModel model = new()
         {
-            return NotFound();
-        }
+            EnrollmentDate = DateTime.Today,
+            Courses = await GetCourseSelectionsAsync()
+        };
 
-        var student = await _context.Students
-            .FirstOrDefaultAsync(m => m.ID == id);
-        if (student == null)
-        {
-            return NotFound();
-        }
-
-        return View(student);
+        return View(model);
     }
 
-    // GET: STUDENTS/Create
-    public IActionResult Create()
-    {
-        return View();
-    }
-
-    // POST: STUDENTS/Create
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+    // POST: Students/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("ID,LastName,FirstMidName,EnrollmentDate,Enrollments")] Student student)
+    public async Task<IActionResult> Create(
+        CreateStudentViewModel model)
     {
-        if (ModelState.IsValid)
-        {
-            _context.Add(student);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-        return View(student);
-    }
+        model.SelectedCourseIds ??= new List<int>();
 
-    // GET: STUDENTS/Edit/5
-    public async Task<IActionResult> Edit(int? id)
-    {
-        if (id == null)
+        List<int> selectedCourseIds = model.SelectedCourseIds
+            .Distinct()
+            .ToList();
+
+        if (selectedCourseIds.Count == 0)
         {
-            return NotFound();
+            ModelState.AddModelError(
+                nameof(model.SelectedCourseIds),
+                "Select at least one course.");
         }
 
-        var student = await _context.Students.FindAsync(id);
-        if (student == null)
-        {
-            return NotFound();
-        }
-        return View(student);
-    }
+        List<int> validCourseIds = new();
 
-    // POST: STUDENTS/Edit/5
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? id, [Bind("ID,LastName,FirstMidName,EnrollmentDate,Enrollments")] Student student)
-    {
-        if (id != student.ID)
+        if (selectedCourseIds.Count > 0)
         {
-            return NotFound();
-        }
+            validCourseIds = await _context.Courses
+                .Where(course =>
+                    selectedCourseIds.Contains(course.CourseID))
+                .Select(course => course.CourseID)
+                .ToListAsync();
 
-        if (ModelState.IsValid)
-        {
-            try
+            if (validCourseIds.Count != selectedCourseIds.Count)
             {
-                _context.Update(student);
-                await _context.SaveChangesAsync();
+                ModelState.AddModelError(
+                    nameof(model.SelectedCourseIds),
+                    "One or more selected courses are invalid.");
             }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!StudentExists(student.ID))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-            return RedirectToAction(nameof(Index));
         }
-        return View(student);
-    }
 
-    // GET: STUDENTS/Delete/5
-    public async Task<IActionResult> Delete(int? id)
-    {
-        if (id == null)
+        if (!ModelState.IsValid)
         {
-            return NotFound();
+            model.Courses = await GetCourseSelectionsAsync();
+            return View(model);
         }
 
-        var student = await _context.Students
-            .FirstOrDefaultAsync(m => m.ID == id);
-        if (student == null)
+        Student student = new()
         {
-            return NotFound();
-        }
+            FirstMidName = model.FirstMidName.Trim(),
+            LastName = model.LastName.Trim(),
+            EnrollmentDate = model.EnrollmentDate!.Value
+        };
 
-        return View(student);
-    }
-
-    // POST: STUDENTS/Delete/5
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int? id)
-    {
-        var student = await _context.Students.FindAsync(id);
-        if (student != null)
-        {
-            _context.Students.Remove(student);
-        }
-
+        _context.Students.Add(student);
         await _context.SaveChangesAsync();
+
+        List<Enrollment> enrollments = validCourseIds
+            .Select(courseId => new Enrollment
+            {
+                StudentID = student.ID,
+                CourseID = courseId,
+                Grade = null
+            })
+            .ToList();
+
+        _context.Enrollments.AddRange(enrollments);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] =
+            "The student was created successfully.";
+
         return RedirectToAction(nameof(Index));
     }
 
-    private bool StudentExists(int? id)
+    // POST: Students/Edit/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(
+        int id,
+        [Bind("ID,LastName,FirstMidName,EnrollmentDate")]
+        Student formStudent,
+        List<int>? selectedCourseIds)
     {
-        return _context.Students.Any(e => e.ID == id);
+        if (id != formStudent.ID)
+        {
+            return NotFound();
+        }
+
+        selectedCourseIds ??= new List<int>();
+
+        List<int> distinctCourseIds = selectedCourseIds
+            .Distinct()
+            .ToList();
+
+        if (distinctCourseIds.Count == 0)
+        {
+            TempData["ErrorMessage"] =
+                "The student must be enrolled in at least one course.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        List<int> validCourseIds = await _context.Courses
+            .Where(course =>
+                distinctCourseIds.Contains(course.CourseID))
+            .Select(course => course.CourseID)
+            .ToListAsync();
+
+        if (validCourseIds.Count != distinctCourseIds.Count)
+        {
+            TempData["ErrorMessage"] =
+                "One or more selected courses are invalid.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (!ModelState.IsValid)
+        {
+            TempData["ErrorMessage"] =
+                "The student information is invalid.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        Student? student = await _context.Students
+            .Include(existingStudent =>
+                existingStudent.Enrollments)
+            .FirstOrDefaultAsync(existingStudent =>
+                existingStudent.ID == id);
+
+        if (student is null)
+        {
+            return NotFound();
+        }
+
+        student.FirstMidName = formStudent.FirstMidName.Trim();
+        student.LastName = formStudent.LastName.Trim();
+        student.EnrollmentDate = formStudent.EnrollmentDate;
+
+        HashSet<int> selectedCourseSet =
+            validCourseIds.ToHashSet();
+
+        HashSet<int> currentCourseSet = student.Enrollments
+            .Select(enrollment => enrollment.CourseID)
+            .ToHashSet();
+
+        // Remove courses that were unchecked.
+        List<Enrollment> enrollmentsToRemove =
+            student.Enrollments
+                .Where(enrollment =>
+                    !selectedCourseSet.Contains(
+                        enrollment.CourseID))
+                .ToList();
+
+        _context.Enrollments.RemoveRange(
+            enrollmentsToRemove);
+
+        // Add newly selected courses.
+        List<Enrollment> enrollmentsToAdd =
+            selectedCourseSet
+                .Where(courseId =>
+                    !currentCourseSet.Contains(courseId))
+                .Select(courseId => new Enrollment
+                {
+                    StudentID = student.ID,
+                    CourseID = courseId,
+                    Grade = null
+                })
+                .ToList();
+
+        _context.Enrollments.AddRange(enrollmentsToAdd);
+
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] =
+            "The student and course enrollments were updated successfully.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    // POST: Students/Delete/5
+    [HttpPost]
+    [ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        Student? student = await _context.Students
+            .Include(existingStudent =>
+                existingStudent.Enrollments)
+            .FirstOrDefaultAsync(existingStudent =>
+                existingStudent.ID == id);
+
+        if (student is null)
+        {
+            return NotFound();
+        }
+
+        _context.Enrollments.RemoveRange(
+            student.Enrollments);
+
+        _context.Students.Remove(student);
+
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] =
+            "The student was deleted successfully.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<List<CourseSelectionViewModel>>
+        GetCourseSelectionsAsync()
+    {
+        return await _context.Courses
+            .AsNoTracking()
+            .OrderBy(course => course.Title)
+            .Select(course => new CourseSelectionViewModel
+            {
+                CourseID = course.CourseID,
+                Title = course.Title,
+                Credits = course.Credits,
+                EnrolledStudentCount =
+                    course.Enrollments.Count()
+            })
+            .ToListAsync();
     }
 }

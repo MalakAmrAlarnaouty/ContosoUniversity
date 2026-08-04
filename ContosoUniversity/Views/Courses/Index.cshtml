@@ -1,0 +1,946 @@
+﻿@model IEnumerable<ContosoUniversity.Models.Course>
+@using ContosoUniversity.Models
+
+@functions {
+    private static int GradeToPoints(Grade grade)
+    {
+        return grade switch
+        {
+            Grade.A => 4,
+            Grade.B => 3,
+            Grade.C => 2,
+            Grade.D => 1,
+            Grade.F => 0,
+            _ => 0
+        };
+    }
+
+    private static string AverageToLetter(double average)
+    {
+        return average switch
+        {
+            >= 3.5 => "A",
+            >= 2.5 => "B",
+            >= 1.5 => "C",
+            >= 0.5 => "D",
+            _ => "F"
+        };
+    }
+}
+
+@{
+    ViewData["Title"] = "Courses";
+
+    var courses = Model.ToList();
+}
+
+<!-- Page heading -->
+<div class="d-flex flex-column
+    flex-md-row
+    justify-content-between
+    align-items-md-center
+    gap-3
+    mb-4">
+
+    <div>
+        <h2 class="mb-1">Courses</h2>
+
+        <p class="text-muted mb-0">
+            View, search, and manage all available courses.
+        </p>
+    </div>
+
+    <a asp-action="Create"
+       class="btn btn-primary">
+        Create New Course
+    </a>
+</div>
+
+<!-- Success message -->
+@if (TempData["SuccessMessage"] is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
+        @TempData["SuccessMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close">
+        </button>
+    </div>
+}
+
+<!-- Error message -->
+@if (TempData["ErrorMessage"] is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show"
+         role="alert">
+
+        @TempData["ErrorMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close">
+        </button>
+    </div>
+}
+
+<!-- Summary cards -->
+<div class="row mb-4">
+
+    <div class="col-md-6 mb-3">
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+                    Total Courses
+                </h6>
+
+                <h2 class="mb-0">
+                    @ViewBag.TotalCourses
+                </h2>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+                    Total Enrolled Students
+                </h6>
+
+                <h2 class="mb-0">
+                    @ViewBag.TotalStudents
+                </h2>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Main course table -->
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header d-flex
+        flex-column
+        flex-md-row
+        justify-content-between
+        align-items-md-center
+        gap-3">
+
+        <strong>Course List</strong>
+
+        @if (courses.Count > 0)
+        {
+            <div style="width: 100%; max-width: 320px;">
+
+                <input type="search"
+                       id="courseSearch"
+                       class="form-control"
+                       placeholder="Search by ID, title or credits..."
+                       aria-label="Search courses" />
+
+            </div>
+        }
+
+    </div>
+
+    <div class="card-body p-0">
+
+        @if (courses.Count == 0)
+        {
+            <div class="alert alert-secondary m-3 mb-3">
+
+                No courses are currently available.
+
+                <a asp-action="Create"
+                   class="alert-link">
+                    Create the first course
+                </a>.
+
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+
+                <table id="courseTable"
+                       class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>Course ID</th>
+                            <th>Title</th>
+                            <th>Credits</th>
+                            <th>Enrolled Students</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="courseTableBody">
+
+                        @foreach (var course in courses)
+                        {
+                            string searchValue =
+                                $"{course.CourseID} " +
+                                $"{course.Title} " +
+                                $"{course.Credits} " +
+                                $"{course.Enrollments.Count}";
+
+                            <tr class="course-row"
+                                data-search="@searchValue.ToLowerInvariant()">
+
+                                <td>
+                                    @course.CourseID
+                                </td>
+
+                                <td>
+                                    @course.Title
+                                </td>
+
+                                <td>
+                                    @course.Credits
+                                </td>
+
+                                <td>
+                                    <button type="button"
+                                            class="badge bg-primary
+                                        rounded-pill
+                                        border-0
+                                        enrollment-button"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#courseModal-@course.CourseID"
+                                            aria-label="View enrollment details for @course.Title">
+
+                                        @course.Enrollments.Count
+                                    </button>
+                                </td>
+
+                                <td>
+                                    @if (course.Enrollments.Count == 0)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteCourseModal-@course.CourseID">
+
+                                            Delete
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                disabled
+                                                title="Students are enrolled in this course">
+
+                                            Delete
+                                        </button>
+                                    }
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <!-- Empty search result -->
+            <div id="noCourseResults"
+                 class="alert alert-secondary m-3 d-none">
+
+                No courses match your search.
+
+            </div>
+
+            <!-- Pagination controls -->
+            <div class="d-flex
+                flex-column
+                flex-md-row
+                justify-content-end
+                align-items-md-center
+                gap-3
+                border-top
+                p-3">
+
+                <div class="d-flex align-items-center gap-2">
+
+                    <label for="courseRowsPerPage"
+                           class="text-muted text-nowrap">
+                        Rows per page:
+                    </label>
+
+                    <input type="number"
+                           id="courseRowsPerPage"
+                           class="form-control form-control-sm"
+                           value="10"
+                           min="1"
+                           step="1"
+                           style="width: 90px;"
+                           aria-label="Number of courses per page" />
+
+                </div>
+
+                <span id="coursePageInformation"
+                      class="text-muted text-nowrap">
+                </span>
+
+                <span id="coursePageNumber"
+                      class="text-muted text-nowrap">
+                </span>
+
+                <div class="btn-group"
+                     role="group"
+                     aria-label="Course pagination">
+
+                    <button type="button"
+                            id="previousCoursePage"
+                            class="btn btn-sm btn-outline-secondary"
+                            aria-label="Previous page">
+
+                        &lsaquo;
+                    </button>
+
+                    <button type="button"
+                            id="nextCoursePage"
+                            class="btn btn-sm btn-outline-secondary"
+                            aria-label="Next page">
+
+                        &rsaquo;
+                    </button>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+</div>
+
+<!-- Course information and delete modals -->
+@foreach (var course in courses)
+{
+    var gradedEnrollments = course.Enrollments
+        .Where(enrollment => enrollment.Grade.HasValue)
+        .ToList();
+
+    double? averageGradePoints =
+        gradedEnrollments.Count > 0
+            ? gradedEnrollments.Average(enrollment =>
+                GradeToPoints(
+                    enrollment.Grade.GetValueOrDefault()))
+            : null;
+
+    var highestEnrollment = gradedEnrollments
+        .OrderByDescending(enrollment =>
+            GradeToPoints(
+                enrollment.Grade.GetValueOrDefault()))
+        .FirstOrDefault();
+
+    var lowestEnrollment = gradedEnrollments
+        .OrderBy(enrollment =>
+            GradeToPoints(
+                enrollment.Grade.GetValueOrDefault()))
+        .FirstOrDefault();
+
+    <!-- Course details modal -->
+    <div class="modal fade"
+         id="courseModal-@course.CourseID"
+         tabindex="-1"
+         aria-labelledby="courseModalLabel-@course.CourseID"
+         aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <div>
+
+                        <h5 class="modal-title"
+                            id="courseModalLabel-@course.CourseID">
+
+                            @course.Title
+                        </h5>
+
+                        <small class="text-muted">
+
+                            Course ID: @course.CourseID
+                            |
+                            Credits: @course.Credits
+
+                        </small>
+
+                    </div>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">
+                    </button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- Course statistics -->
+                    <div class="row mb-4">
+
+                        <!-- Number of students -->
+                        <div class="col-sm-6 col-lg-3 mb-3">
+
+                            <div class="card h-100 text-center">
+
+                                <div class="card-body">
+
+                                    <h6 class="text-muted">
+                                        Students
+                                    </h6>
+
+                                    <h3 class="mb-0">
+                                        @course.Enrollments.Count
+                                    </h3>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- Highest grade -->
+                        <div class="col-sm-6 col-lg-3 mb-3">
+
+                            <div class="card h-100 text-center">
+
+                                <div class="card-body">
+
+                                    <h6 class="text-muted">
+                                        Highest Grade
+                                    </h6>
+
+                                    @if (highestEnrollment is not null &&
+                                         highestEnrollment.Grade.HasValue)
+                                    {
+                                        <h3 class="mb-0">
+                                            @highestEnrollment.Grade.Value
+                                        </h3>
+                                    }
+                                    else
+                                    {
+                                        <h3 class="mb-0">
+                                            N/A
+                                        </h3>
+                                    }
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- Lowest grade -->
+                        <div class="col-sm-6 col-lg-3 mb-3">
+
+                            <div class="card h-100 text-center">
+
+                                <div class="card-body">
+
+                                    <h6 class="text-muted">
+                                        Lowest Grade
+                                    </h6>
+
+                                    @if (lowestEnrollment is not null &&
+                                         lowestEnrollment.Grade.HasValue)
+                                    {
+                                        <h3 class="mb-0">
+                                            @lowestEnrollment.Grade.Value
+                                        </h3>
+                                    }
+                                    else
+                                    {
+                                        <h3 class="mb-0">
+                                            N/A
+                                        </h3>
+                                    }
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- Average grade -->
+                        <div class="col-sm-6 col-lg-3 mb-3">
+
+                            <div class="card h-100 text-center">
+
+                                <div class="card-body">
+
+                                    <h6 class="text-muted">
+                                        Average
+                                    </h6>
+
+                                    @if (averageGradePoints.HasValue)
+                                    {
+                                        <h3 class="mb-0">
+                                            @averageGradePoints.Value.ToString("0.00")
+                                        </h3>
+
+                                        <small class="text-muted">
+
+                                            Letter grade:
+                                            @AverageToLetter(
+                                                averageGradePoints.Value)
+
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <h3 class="mb-0">
+                                            N/A
+                                        </h3>
+
+                                        <small class="text-muted">
+                                            No grades available
+                                        </small>
+                                    }
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <h5>Enrolled Students</h5>
+
+                    @if (course.Enrollments.Count == 0)
+                    {
+                        <div class="alert alert-secondary mb-0">
+
+                            No students are enrolled in this course.
+
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+
+                            <table class="table table-striped align-middle mb-0">
+
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Student Name</th>
+                                        <th>Grade</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    @foreach (
+                                        var enrollment in
+                                        course.Enrollments
+                                            .OrderBy(enrollment =>
+                                                enrollment.Student.LastName)
+                                            .ThenBy(enrollment =>
+                                                enrollment.Student.FirstMidName))
+                                    {
+                                        <tr>
+
+                                            <td>
+                                                @enrollment.StudentID
+                                            </td>
+
+                                            <td>
+                                                @enrollment.Student.FirstMidName
+                                                @enrollment.Student.LastName
+                                            </td>
+
+                                            <td>
+
+                                                @if (enrollment.Grade.HasValue)
+                                                {
+                                                    <span class="badge bg-success">
+
+                                                        @enrollment.Grade.Value
+
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">
+
+                                                        Not graded
+
+                                                    </span>
+                                                }
+
+                                            </td>
+
+                                        </tr>
+                                    }
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+                    }
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+
+                        Close
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Delete confirmation modal -->
+    @if (course.Enrollments.Count == 0)
+    {
+        <div class="modal fade"
+             id="deleteCourseModal-@course.CourseID"
+             tabindex="-1"
+             aria-labelledby="deleteCourseModalLabel-@course.CourseID"
+             aria-hidden="true">
+
+            <div class="modal-dialog modal-dialog-centered">
+
+                <div class="modal-content">
+
+                    <div class="modal-header">
+
+                        <h5 class="modal-title"
+                            id="deleteCourseModalLabel-@course.CourseID">
+
+                            Delete Course
+                        </h5>
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close">
+                        </button>
+
+                    </div>
+
+                    <div class="modal-body">
+
+                        Are you sure you want to delete
+
+                        <strong>
+                            @course.Title
+                        </strong>?
+
+                        <p class="text-muted mt-2 mb-0">
+
+                            Course ID: @course.CourseID
+
+                        </p>
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-bs-dismiss="modal">
+
+                            Cancel
+                        </button>
+
+                        <form asp-action="Delete"
+                              asp-route-id="@course.CourseID"
+                              method="post">
+
+                            <button type="submit"
+                                    class="btn btn-danger">
+
+                                Delete Course
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+}
+
+<style>
+    .enrollment-button {
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+
+        .enrollment-button:hover {
+            opacity: 0.85;
+        }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            const tableBody =
+                document.getElementById("courseTableBody");
+
+            if (!tableBody) {
+                return;
+            }
+
+            const allRows = Array.from(
+                tableBody.querySelectorAll(".course-row")
+            );
+
+            const searchInput =
+                document.getElementById("courseSearch");
+
+            const rowsPerPageInput =
+                document.getElementById("courseRowsPerPage");
+
+            const pageInformation =
+                document.getElementById("coursePageInformation");
+
+            const pageNumber =
+                document.getElementById("coursePageNumber");
+
+            const previousButton =
+                document.getElementById("previousCoursePage");
+
+            const nextButton =
+                document.getElementById("nextCoursePage");
+
+            const noResultsMessage =
+                document.getElementById("noCourseResults");
+
+            let currentPage = 1;
+
+            function getFilteredRows() {
+
+                const searchText =
+                    searchInput.value
+                        .trim()
+                        .toLowerCase();
+
+                if (searchText === "") {
+                    return allRows;
+                }
+
+                return allRows.filter(function(row) {
+
+                    const rowSearchValue =
+                        row.dataset.search || "";
+
+                    return rowSearchValue.includes(searchText);
+                });
+            }
+
+            function getRowsPerPage() {
+
+                const enteredValue =
+                    Number.parseInt(
+                        rowsPerPageInput.value,
+                        10
+                    );
+
+                if (Number.isNaN(enteredValue) ||
+                    enteredValue < 1) {
+
+                    return 1;
+                }
+
+                return enteredValue;
+            }
+
+            function renderTable() {
+
+                const filteredRows =
+                    getFilteredRows();
+
+                const rowsPerPage =
+                    getRowsPerPage();
+
+                const totalPages =
+                    Math.max(
+                        1,
+                        Math.ceil(
+                            filteredRows.length /
+                            rowsPerPage
+                        )
+                    );
+
+                if (currentPage > totalPages) {
+                    currentPage = totalPages;
+                }
+
+                if (currentPage < 1) {
+                    currentPage = 1;
+                }
+
+                allRows.forEach(function(row) {
+                    row.classList.add("d-none");
+                });
+
+                if (filteredRows.length === 0) {
+
+                    noResultsMessage.classList.remove(
+                        "d-none"
+                    );
+
+                    pageInformation.textContent =
+                        "0 courses";
+
+                    pageNumber.textContent =
+                        "Page 0 of 0";
+
+                    previousButton.disabled = true;
+                    nextButton.disabled = true;
+
+                    return;
+                }
+
+                noResultsMessage.classList.add(
+                    "d-none"
+                );
+
+                const startIndex =
+                    (currentPage - 1) *
+                    rowsPerPage;
+
+                const endIndex =
+                    Math.min(
+                        startIndex + rowsPerPage,
+                        filteredRows.length
+                    );
+
+                filteredRows
+                    .slice(startIndex, endIndex)
+                    .forEach(function(row) {
+
+                        row.classList.remove(
+                            "d-none"
+                        );
+                    });
+
+                pageInformation.textContent =
+                    `${startIndex + 1} - ` +
+                    `${endIndex} of ` +
+                    `${filteredRows.length}`;
+
+                pageNumber.textContent =
+                    `Page ${currentPage} of ${totalPages}`;
+
+                previousButton.disabled =
+                    currentPage === 1;
+
+                nextButton.disabled =
+                    currentPage === totalPages;
+            }
+
+            searchInput.addEventListener(
+                "input",
+                function() {
+
+                    currentPage = 1;
+                    renderTable();
+                }
+            );
+
+            rowsPerPageInput.addEventListener(
+                "input",
+                function() {
+
+                    currentPage = 1;
+                    renderTable();
+                }
+            );
+
+            rowsPerPageInput.addEventListener(
+                "change",
+                function() {
+
+                    if (!rowsPerPageInput.value ||
+                        Number(rowsPerPageInput.value) < 1) {
+
+                        rowsPerPageInput.value = 1;
+                    }
+
+                    currentPage = 1;
+                    renderTable();
+                }
+            );
+
+            previousButton.addEventListener(
+                "click",
+                function() {
+
+                    if (currentPage > 1) {
+
+                        currentPage--;
+                        renderTable();
+                    }
+                }
+            );
+
+            nextButton.addEventListener(
+                "click",
+                function() {
+
+                    const filteredRows =
+                        getFilteredRows();
+
+                    const rowsPerPage =
+                        getRowsPerPage();
+
+                    const totalPages =
+                        Math.max(
+                            1,
+                            Math.ceil(
+                                filteredRows.length /
+                                rowsPerPage
+                            )
+                        );
+
+                    if (currentPage < totalPages) {
+
+                        currentPage++;
+                        renderTable();
+                    }
+                }
+            );
+
+            renderTable();
+        });
+    </script>
+}
