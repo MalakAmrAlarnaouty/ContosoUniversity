@@ -77,18 +77,37 @@ else
 {
     <div class="card shadow-sm mb-4">
 
-        <div class="card-header">
+        <div class="card-header d-flex
+            flex-column
+            flex-md-row
+            justify-content-between
+            align-items-md-center
+            gap-3">
+
             <strong>Student List</strong>
+
+            <div style="width: 100%; max-width: 320px;">
+
+                <input type="search"
+                       id="studentSearch"
+                       class="form-control"
+                       placeholder="Search students..."
+                       aria-label="Search students" />
+
+            </div>
+
         </div>
 
         <div class="card-body p-0">
 
             <div class="table-responsive">
 
-                <table class="table table-hover align-middle mb-0">
+                <table id="studentTable"
+                       class="table table-hover align-middle mb-0">
 
                     <thead class="table-light">
                         <tr>
+                            <th>Student ID</th>
                             <th>Last Name</th>
                             <th>First Name</th>
                             <th>Enrollment Date</th>
@@ -97,11 +116,23 @@ else
                         </tr>
                     </thead>
 
-                    <tbody>
+                    <tbody id="studentTableBody">
 
                         @foreach (var student in students)
                         {
-                            <tr>
+                            string studentSearchValue =
+                                $"{student.ID} " +
+                                $"{student.FirstMidName} " +
+                                $"{student.LastName} " +
+                                $"{student.EnrollmentDate:MM/dd/yyyy} " +
+                                $"{student.Enrollments.Count}";
+
+                            <tr class="student-row"
+                                data-search="@studentSearchValue.ToLowerInvariant()">
+
+                                <td>
+                                    @student.ID
+                                </td>
 
                                 <td>
                                     @student.LastName
@@ -150,7 +181,75 @@ else
 
             </div>
 
+            <div id="noStudentResults"
+                 class="alert alert-secondary m-3 d-none">
+
+                No students match your search.
+
+            </div>
+
+            <div class="d-flex
+                flex-column
+                flex-md-row
+                justify-content-end
+                align-items-md-center
+                gap-3
+                border-top
+                p-3">
+
+                <div class="d-flex align-items-center gap-2">
+
+                    <label for="studentRowsPerPage"
+                           class="text-muted text-nowrap">
+
+                        Rows per page:
+                    </label>
+
+                    <input type="number"
+                           id="studentRowsPerPage"
+                           class="form-control form-control-sm"
+                           value="10"
+                           min="1"
+                           step="1"
+                           style="width: 90px;"
+                           aria-label="Number of students per page" />
+
+                </div>
+
+                <span id="studentPageInformation"
+                      class="text-muted text-nowrap">
+                </span>
+
+                <span id="studentPageNumber"
+                      class="text-muted text-nowrap">
+                </span>
+
+                <div class="btn-group"
+                     role="group"
+                     aria-label="Student pagination">
+
+                    <button type="button"
+                            id="previousStudentPage"
+                            class="btn btn-sm btn-outline-secondary"
+                            aria-label="Previous page">
+
+                        &lsaquo;
+                    </button>
+
+                    <button type="button"
+                            id="nextStudentPage"
+                            class="btn btn-sm btn-outline-secondary"
+                            aria-label="Next page">
+
+                        &rsaquo;
+                    </button>
+
+                </div>
+
+            </div>
+
         </div>
+
     </div>
 }
 
@@ -849,10 +948,8 @@ else
             form.reset();
 
             form
-                .querySelectorAll(
-                    ".edit-course-checkbox"
-                )
-                .forEach(function (checkbox) {
+                .querySelectorAll(".edit-course-checkbox")
+                .forEach(function(checkbox) {
 
                     updateGradeSelect(
                         checkbox,
@@ -867,14 +964,12 @@ else
         }
 
         document
-            .querySelectorAll(
-                ".edit-course-checkbox"
-            )
-            .forEach(function (checkbox) {
+            .querySelectorAll(".edit-course-checkbox")
+            .forEach(function(checkbox) {
 
                 checkbox.addEventListener(
                     "change",
-                    function () {
+                    function() {
 
                         updateGradeSelect(
                             checkbox,
@@ -885,23 +980,272 @@ else
 
         document
             .querySelectorAll(".student-modal")
-            .forEach(function (modalElement) {
+            .forEach(function(modalElement) {
 
                 modalElement.addEventListener(
                     "hidden.bs.modal",
-                    function () {
+                    function() {
 
                         const studentId =
                             modalElement.dataset.studentId;
 
-                        resetStudentEditForm(
-                            studentId
-                        );
-
-                        showStudentDetails(
-                            studentId
-                        );
+                        resetStudentEditForm(studentId);
+                        showStudentDetails(studentId);
                     });
             });
+
+        // Student table pagination
+        const studentTableBody =
+            document.getElementById("studentTableBody");
+
+        if (studentTableBody) {
+
+            const allStudentRows = Array.from(
+                studentTableBody.querySelectorAll(
+                    ".student-row"
+                )
+            );
+
+            const studentSearchInput =
+                document.getElementById(
+                    "studentSearch"
+                );
+
+            const studentRowsPerPageInput =
+                document.getElementById(
+                    "studentRowsPerPage"
+                );
+
+            const studentPageInformation =
+                document.getElementById(
+                    "studentPageInformation"
+                );
+
+            const studentPageNumber =
+                document.getElementById(
+                    "studentPageNumber"
+                );
+
+            const previousStudentButton =
+                document.getElementById(
+                    "previousStudentPage"
+                );
+
+            const nextStudentButton =
+                document.getElementById(
+                    "nextStudentPage"
+                );
+
+            const noStudentResults =
+                document.getElementById(
+                    "noStudentResults"
+                );
+
+            let currentStudentPage = 1;
+
+            function getFilteredStudentRows() {
+                const searchText =
+                    studentSearchInput.value
+                        .trim()
+                        .toLowerCase();
+
+                if (searchText === "") {
+                    return allStudentRows;
+                }
+
+                return allStudentRows.filter(
+                    function(row) {
+
+                        const searchableValue =
+                            row.dataset.search || "";
+
+                        return searchableValue.includes(
+                            searchText
+                        );
+                    }
+                );
+            }
+
+            function getStudentRowsPerPage() {
+                const enteredValue =
+                    Number.parseInt(
+                        studentRowsPerPageInput.value,
+                        10
+                    );
+
+                if (Number.isNaN(enteredValue) ||
+                    enteredValue < 1) {
+
+                    return 1;
+                }
+
+                return enteredValue;
+            }
+
+            function renderStudentTable() {
+                const filteredRows =
+                    getFilteredStudentRows();
+
+                const rowsPerPage =
+                    getStudentRowsPerPage();
+
+                const totalPages =
+                    Math.max(
+                        1,
+                        Math.ceil(
+                            filteredRows.length /
+                            rowsPerPage
+                        )
+                    );
+
+                if (currentStudentPage > totalPages) {
+                    currentStudentPage = totalPages;
+                }
+
+                if (currentStudentPage < 1) {
+                    currentStudentPage = 1;
+                }
+
+                allStudentRows.forEach(
+                    function(row) {
+
+                        row.classList.add("d-none");
+                    }
+                );
+
+                if (filteredRows.length === 0) {
+
+                    noStudentResults.classList.remove(
+                        "d-none"
+                    );
+
+                    studentPageInformation.textContent =
+                        "0 students";
+
+                    studentPageNumber.textContent =
+                        "Page 0 of 0";
+
+                    previousStudentButton.disabled = true;
+                    nextStudentButton.disabled = true;
+
+                    return;
+                }
+
+                noStudentResults.classList.add(
+                    "d-none"
+                );
+
+                const startIndex =
+                    (currentStudentPage - 1) *
+                    rowsPerPage;
+
+                const endIndex =
+                    Math.min(
+                        startIndex + rowsPerPage,
+                        filteredRows.length
+                    );
+
+                filteredRows
+                    .slice(startIndex, endIndex)
+                    .forEach(function(row) {
+
+                        row.classList.remove(
+                            "d-none"
+                        );
+                    });
+
+                studentPageInformation.textContent =
+                    `${startIndex + 1} - ` +
+                    `${endIndex} of ` +
+                    `${filteredRows.length}`;
+
+                studentPageNumber.textContent =
+                    `Page ${currentStudentPage} ` +
+                    `of ${totalPages}`;
+
+                previousStudentButton.disabled =
+                    currentStudentPage === 1;
+
+                nextStudentButton.disabled =
+                    currentStudentPage === totalPages;
+            }
+
+            studentSearchInput.addEventListener(
+                "input",
+                function() {
+
+                    currentStudentPage = 1;
+                    renderStudentTable();
+                }
+            );
+
+            studentRowsPerPageInput.addEventListener(
+                "input",
+                function() {
+
+                    currentStudentPage = 1;
+                    renderStudentTable();
+                }
+            );
+
+            studentRowsPerPageInput.addEventListener(
+                "change",
+                function() {
+
+                    if (!studentRowsPerPageInput.value ||
+                        Number(
+                            studentRowsPerPageInput.value
+                        ) < 1) {
+
+                        studentRowsPerPageInput.value = 1;
+                    }
+
+                    currentStudentPage = 1;
+                    renderStudentTable();
+                }
+            );
+
+            previousStudentButton.addEventListener(
+                "click",
+                function() {
+
+                    if (currentStudentPage > 1) {
+
+                        currentStudentPage--;
+                        renderStudentTable();
+                    }
+                }
+            );
+
+            nextStudentButton.addEventListener(
+                "click",
+                function() {
+
+                    const filteredRows =
+                        getFilteredStudentRows();
+
+                    const rowsPerPage =
+                        getStudentRowsPerPage();
+
+                    const totalPages =
+                        Math.max(
+                            1,
+                            Math.ceil(
+                                filteredRows.length /
+                                rowsPerPage
+                            )
+                        );
+
+                    if (currentStudentPage < totalPages) {
+
+                        currentStudentPage++;
+                        renderStudentTable();
+                    }
+                }
+            );
+
+            renderStudentTable();
+        }
     </script>
+}
 }
