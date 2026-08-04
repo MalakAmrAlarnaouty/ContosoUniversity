@@ -1,0 +1,690 @@
+﻿@model IEnumerable<ContosoUniversity.Models.Department>
+
+@{
+    ViewData["Title"] = "Departments";
+
+    var departments = Model.ToList();
+}
+
+<div class="d-flex flex-column
+    flex-md-row
+    justify-content-between
+    align-items-md-center
+    gap-3
+    mb-4">
+
+    <div>
+        <h2 class="mb-1">Departments</h2>
+
+        <p class="text-muted mb-0">
+            View and manage university departments.
+        </p>
+    </div>
+
+    <a asp-action="Create"
+       class="btn btn-primary">
+        Create New Department
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
+        @TempData["SuccessMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close">
+        </button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show"
+         role="alert">
+
+        @TempData["ErrorMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close">
+        </button>
+    </div>
+}
+
+<!-- Summary cards -->
+<div class="row mb-4">
+
+    <div class="col-md-6 mb-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+                    Total Departments
+                </h6>
+
+                <h2 class="mb-0">
+                    @ViewBag.TotalDepartments
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-6 mb-3">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+                    Total Instructors
+                </h6>
+
+                <h2 class="mb-0">
+                    @ViewBag.TotalInstructors
+                </h2>
+
+                <small class="text-muted">
+                    Instructor records will be connected next.
+                </small>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@if (departments.Count == 0)
+{
+    <div class="alert alert-secondary">
+
+        No departments are currently available.
+
+        <a asp-action="Create"
+           class="alert-link">
+            Create the first department
+        </a>.
+
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>Department List</strong>
+        </div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+                            <th>Department ID</th>
+                            <th>Name</th>
+                            <th>Start Date</th>
+                            <th>Courses</th>
+                            <th>Instructors</th>
+                            <th>Actions</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var department in departments)
+                        {
+                            <tr>
+
+                                <td>
+                                    @department.DepartmentID
+                                </td>
+
+                                <td>
+                                    @department.Name
+                                </td>
+
+                                <td>
+                                    @department.StartDate.ToString("MM/dd/yyyy")
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-primary rounded-pill">
+                                        @department.Courses.Count
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-secondary rounded-pill">
+                                        0
+                                    </span>
+                                </td>
+
+                                <td>
+
+                                    <button type="button"
+                                            class="btn btn-link p-0 align-baseline"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#detailsModal-@department.DepartmentID">
+
+                                        Details
+                                    </button>
+
+                                    <span>|</span>
+
+                                    <button type="button"
+                                            class="btn btn-link text-danger p-0 align-baseline"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteModal-@department.DepartmentID">
+
+                                        Delete
+                                    </button>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+@foreach (var department in departments)
+{
+    <!-- Details and Edit modal -->
+    <div class="modal fade department-modal"
+         id="detailsModal-@department.DepartmentID"
+         data-department-id="@department.DepartmentID"
+         tabindex="-1"
+         aria-labelledby="detailsModalLabel-@department.DepartmentID"
+         aria-hidden="true">
+
+        <div class="modal-dialog
+            modal-dialog-centered
+            modal-dialog-scrollable
+            modal-lg">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title"
+                        id="detailsModalLabel-@department.DepartmentID">
+
+                        Department Details
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">
+                    </button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- Details section -->
+                    <div id="departmentDetails-@department.DepartmentID">
+
+                        <div class="text-center mb-4">
+
+                            <div class="rounded-circle
+                                bg-primary
+                                text-white
+                                d-flex
+                                align-items-center
+                                justify-content-center
+                                mx-auto
+                                mb-3"
+                                 style="width: 80px;
+                                height: 80px;
+                                font-size: 28px;">
+
+                                @(string.IsNullOrWhiteSpace(department.Name)
+                                    ? "?"
+                                    : department.Name
+                                        .Substring(0, 1)
+                                        .ToUpper())
+                            </div>
+
+                            <h4 class="mb-1">
+                                @department.Name
+                            </h4>
+
+                            <span class="text-muted">
+                                Department ID:
+                                @department.DepartmentID
+                            </span>
+
+                        </div>
+
+                        <div class="row mb-4">
+
+                            <div class="col-md-4 mb-3">
+
+                                <div class="card h-100 text-center">
+
+                                    <div class="card-body">
+
+                                        <h6 class="text-muted">
+                                            Instructors
+                                        </h6>
+
+                                        <h4 class="mb-0">
+                                            0
+                                        </h4>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+
+                                <div class="card h-100 text-center">
+
+                                    <div class="card-body">
+
+                                        <h6 class="text-muted">
+                                            Start Date
+                                        </h6>
+
+                                        <h4 class="mb-0">
+                                            @department.StartDate.ToString("MM/dd/yyyy")
+                                        </h4>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+
+                                <div class="card h-100 text-center">
+
+                                    <div class="card-body">
+
+                                        <h6 class="text-muted">
+                                            Courses
+                                        </h6>
+
+                                        <h4 class="mb-0">
+                                            @department.Courses.Count
+                                        </h4>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <h5>Department Courses</h5>
+
+                        @if (department.Courses.Count == 0)
+                        {
+                            <div class="alert alert-secondary mb-0">
+
+                                No courses are assigned to this department.
+
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+
+                                <table class="table table-striped align-middle mb-0">
+
+                                    <thead class="table-light">
+
+                                        <tr>
+                                            <th>Course ID</th>
+                                            <th>Title</th>
+                                            <th>Credits</th>
+                                        </tr>
+
+                                    </thead>
+
+                                    <tbody>
+
+                                        @foreach (
+                                            var course in
+                                            department.Courses
+                                                .OrderBy(course =>
+                                                    course.Title))
+                                        {
+                                            <tr>
+
+                                                <td>
+                                                    @course.CourseID
+                                                </td>
+
+                                                <td>
+                                                    @course.Title
+                                                </td>
+
+                                                <td>
+                                                    @course.Credits
+                                                </td>
+
+                                            </tr>
+                                        }
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        }
+
+                    </div>
+
+                    <!-- Edit section -->
+                    <div id="departmentEdit-@department.DepartmentID"
+                         class="d-none">
+
+                        <form id="departmentEditForm-@department.DepartmentID"
+                              asp-action="Edit"
+                              asp-route-id="@department.DepartmentID"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="DepartmentID"
+                                   value="@department.DepartmentID" />
+
+                            <div class="card shadow-sm">
+
+                                <div class="card-header">
+                                    <strong>Department Information</strong>
+                                </div>
+
+                                <div class="card-body">
+
+                                    <div class="mb-3">
+
+                                        <label for="departmentName-@department.DepartmentID"
+                                               class="form-label">
+
+                                            Department Name
+                                        </label>
+
+                                        <input type="text"
+                                               id="departmentName-@department.DepartmentID"
+                                               name="Name"
+                                               value="@department.Name"
+                                               class="form-control"
+                                               required />
+
+                                    </div>
+
+                                    <div class="mb-3">
+
+                                        <label for="departmentStartDate-@department.DepartmentID"
+                                               class="form-label">
+
+                                            Start Date
+                                        </label>
+
+                                        <input type="date"
+                                               id="departmentStartDate-@department.DepartmentID"
+                                               name="StartDate"
+                                               value="@department.StartDate.ToString("yyyy-MM-dd")"
+                                               class="form-control"
+                                               required />
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <div id="departmentDetailsButtons-@department.DepartmentID">
+
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-bs-dismiss="modal">
+
+                            Close
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-primary"
+                                onclick="showDepartmentEdit(@department.DepartmentID)">
+
+                            Edit Department
+                        </button>
+
+                    </div>
+
+                    <div id="departmentEditButtons-@department.DepartmentID"
+                         class="d-none">
+
+                        <button type="button"
+                                class="btn btn-secondary"
+                                onclick="cancelDepartmentEdit(@department.DepartmentID)">
+
+                            Cancel
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-success"
+                                form="departmentEditForm-@department.DepartmentID">
+
+                            Save Changes
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Delete modal -->
+    <div class="modal fade"
+         id="deleteModal-@department.DepartmentID"
+         tabindex="-1"
+         aria-labelledby="deleteModalLabel-@department.DepartmentID"
+         aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title"
+                        id="deleteModalLabel-@department.DepartmentID">
+
+                        Delete Department
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">
+                    </button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    Are you sure you want to delete
+
+                    <strong>
+                        @department.Name
+                    </strong>?
+
+                    @if (department.Courses.Count > 0)
+                    {
+                        <p class="text-muted mt-3 mb-0">
+
+                            The department assignment will be removed from
+                            @department.Courses.Count course(s), but the
+                            courses themselves will not be deleted.
+
+                        </p>
+                    }
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+
+                        Cancel
+                    </button>
+
+                    <form asp-action="Delete"
+                          asp-route-id="@department.DepartmentID"
+                          method="post">
+
+                        <button type="submit"
+                                class="btn btn-danger">
+
+                            Delete Department
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function showDepartmentEdit(departmentId) {
+            document
+                .getElementById(
+                    `departmentDetails-${departmentId}`
+                )
+                .classList.add("d-none");
+
+            document
+                .getElementById(
+                    `departmentDetailsButtons-${departmentId}`
+                )
+                .classList.add("d-none");
+
+            document
+                .getElementById(
+                    `departmentEdit-${departmentId}`
+                )
+                .classList.remove("d-none");
+
+            document
+                .getElementById(
+                    `departmentEditButtons-${departmentId}`
+                )
+                .classList.remove("d-none");
+        }
+
+        function showDepartmentDetails(departmentId) {
+            document
+                .getElementById(
+                    `departmentEdit-${departmentId}`
+                )
+                .classList.add("d-none");
+
+            document
+                .getElementById(
+                    `departmentEditButtons-${departmentId}`
+                )
+                .classList.add("d-none");
+
+            document
+                .getElementById(
+                    `departmentDetails-${departmentId}`
+                )
+                .classList.remove("d-none");
+
+            document
+                .getElementById(
+                    `departmentDetailsButtons-${departmentId}`
+                )
+                .classList.remove("d-none");
+        }
+
+        function resetDepartmentEditForm(departmentId) {
+            const form = document.getElementById(
+                `departmentEditForm-${departmentId}`
+            );
+
+            if (form) {
+                form.reset();
+            }
+        }
+
+        function cancelDepartmentEdit(departmentId) {
+            resetDepartmentEditForm(departmentId);
+            showDepartmentDetails(departmentId);
+        }
+
+        document
+            .querySelectorAll(".department-modal")
+            .forEach(function(modalElement) {
+
+                modalElement.addEventListener(
+                    "hidden.bs.modal",
+                    function() {
+
+                        const departmentId =
+                            modalElement.dataset.departmentId;
+
+                        resetDepartmentEditForm(
+                            departmentId
+                        );
+
+                        showDepartmentDetails(
+                            departmentId
+                        );
+                    }
+                );
+            });
+    </script>
+}
