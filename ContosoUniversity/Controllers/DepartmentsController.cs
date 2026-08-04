@@ -20,13 +20,15 @@ public class DepartmentsController : Controller
         List<Department> departments = await _context.Departments
             .AsNoTracking()
             .Include(department => department.Courses)
+            .Include(department => department.Instructors)
             .OrderBy(department => department.Name)
             .ToListAsync();
 
         ViewBag.TotalDepartments = departments.Count;
 
-        // This will come from the Instructor table later.
-        ViewBag.TotalInstructors = 0;
+        ViewBag.TotalInstructors = await _context.Instructors
+            .AsNoTracking()
+            .CountAsync();
 
         return View(departments);
     }
@@ -47,13 +49,12 @@ public class DepartmentsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        [Bind("Name,StartDate")]
-        Department department)
+        [Bind("Name,StartDate")] Department department)
     {
         department.Name =
             department.Name?.Trim() ?? string.Empty;
 
-        // Budget is not used in this project.
+        // Budget is not used by this project.
         department.Budget = 0;
 
         if (string.IsNullOrWhiteSpace(department.Name))
@@ -63,16 +64,22 @@ public class DepartmentsController : Controller
                 "Department name is required.");
         }
 
-        bool nameExists = await _context.Departments
-            .AnyAsync(existingDepartment =>
-                existingDepartment.Name.ToLower()
-                == department.Name.ToLower());
-
-        if (nameExists)
+        if (!string.IsNullOrWhiteSpace(department.Name))
         {
-            ModelState.AddModelError(
-                nameof(department.Name),
-                "A department with this name already exists.");
+            string normalizedName =
+                department.Name.ToUpper();
+
+            bool nameExists = await _context.Departments
+                .AnyAsync(existingDepartment =>
+                    existingDepartment.Name.ToUpper() ==
+                    normalizedName);
+
+            if (nameExists)
+            {
+                ModelState.AddModelError(
+                    nameof(department.Name),
+                    "A department with this name already exists.");
+            }
         }
 
         if (!ModelState.IsValid)
@@ -113,11 +120,14 @@ public class DepartmentsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        string normalizedName =
+            formDepartment.Name.ToUpper();
+
         bool duplicateName = await _context.Departments
             .AnyAsync(department =>
                 department.DepartmentID != id &&
-                department.Name.ToLower()
-                == formDepartment.Name.ToLower());
+                department.Name.ToUpper() ==
+                normalizedName);
 
         if (duplicateName)
         {
@@ -145,8 +155,6 @@ public class DepartmentsController : Controller
 
         department.Name = formDepartment.Name;
         department.StartDate = formDepartment.StartDate;
-
-        // Keep the unused value at zero.
         department.Budget = 0;
 
         await _context.SaveChangesAsync();
@@ -165,6 +173,8 @@ public class DepartmentsController : Controller
         Department? department = await _context.Departments
             .Include(existingDepartment =>
                 existingDepartment.Courses)
+            .Include(existingDepartment =>
+                existingDepartment.Instructors)
             .FirstOrDefaultAsync(existingDepartment =>
                 existingDepartment.DepartmentID == id);
 
@@ -173,10 +183,16 @@ public class DepartmentsController : Controller
             return NotFound();
         }
 
-        // Courses remain in the database but lose their department.
+        // Keep the courses, but remove their department assignment.
         foreach (Course course in department.Courses)
         {
             course.DepartmentID = null;
+        }
+
+        // Keep the instructors, but remove their department assignment.
+        foreach (Instructor instructor in department.Instructors)
+        {
+            instructor.DepartmentID = null;
         }
 
         _context.Departments.Remove(department);

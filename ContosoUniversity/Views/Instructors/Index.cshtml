@@ -1,5 +1,178 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model IEnumerable<ContosoUniversity.Models.Instructor>
+
 @{
+    ViewData["Title"] = "Instructors";
+    var instructors = Model.ToList();
+}
+
+<div class="d-flex flex-column
+    flex-md-row
+    justify-content-between
+    align-items-md-center
+    gap-3
+    mb-4">
+
+    <div>
+        <h2 class="mb-1">Instructors</h2>
+
+        <p class="text-muted mb-0">
+            View and manage university instructors.
+        </p>
+    </div>
+
+    <a asp-action="Create"
+       class="btn btn-primary">
+        Create New Instructor
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["SuccessMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
+    </div>
+}
+
+<div class="row mb-4">
+
+    <div class="col-md-6 mb-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="text-muted">Total Instructors</h6>
+                <h2 class="mb-0">@ViewBag.TotalInstructors</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6 class="text-muted">Total Departments</h6>
+                <h2 class="mb-0">@ViewBag.TotalDepartments</h2>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@if (instructors.Count == 0)
+{
+    <div class="alert alert-secondary">
+        No instructors are currently available.
+
+        <a asp-action="Create"
+           class="alert-link">
+            Create the first instructor
+        </a>.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+
+        <div class="card-header">
+            <strong>Instructor List</strong>
+        </div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Hire Date</th>
+                            <th>Office</th>
+                            <th>Courses</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var instructor in instructors)
+                        {
+                            <tr>
+                                <td>@instructor.InstructorID</td>
+
+                                <td>
+                                    <strong>@instructor.FullName</strong>
+                                </td>
+
+                                <td>
+                                    @(instructor.Department?.Name
+                                        ?? "No department")
+                                </td>
+
+                                <td>
+                                    @instructor.HireDate.ToString("MM/dd/yyyy")
+                                </td>
+
+                                <td>
+                                    @(instructor.OfficeLocation
+                                        ?? "Not assigned")
+                                </td>
+
+                                <td>
+                                    @if (instructor.CourseInstructors.Count == 0)
+                                    {
+                                        <span class="text-muted">
+                                            None
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        @string.Join(
+                                            ", ",
+                                            instructor.CourseInstructors
+                                                .OrderBy(item =>
+                                                    item.Course.Title)
+                                                .Select(item =>
+                                                    item.Course.Title))
+                                    }
+                                </td>
+
+                                <td class="text-nowrap">
+
+                                    <a asp-action="Edit"
+                                       asp-route-id="@instructor.InstructorID"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Edit
+                                    </a>
+
+                                    <form asp-action="Delete"
+                                          asp-route-id="@instructor.InstructorID"
+                                          method="post"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Delete this instructor?');">
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger">
+                                            Delete
+                                        </button>
+
+                                    </form>
+
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
 }

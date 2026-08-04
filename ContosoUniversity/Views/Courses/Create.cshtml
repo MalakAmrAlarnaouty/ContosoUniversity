@@ -4,12 +4,18 @@
     ViewData["Title"] = "Create Course";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column
+    flex-md-row
+    justify-content-between
+    align-items-md-center
+    gap-3
+    mb-4">
+
     <div>
         <h2 class="mb-1">Create Course</h2>
 
         <p class="text-muted mb-0">
-            Enter the information for the new course.
+            Enter the information for the new course and select its department.
         </p>
     </div>
 
@@ -20,13 +26,14 @@
 </div>
 
 <div class="row justify-content-center">
+
     <div class="col-lg-9">
 
         <form asp-action="Create"
               method="post">
 
             <div asp-validation-summary="ModelOnly"
-                 class="text-danger mb-3">
+                 class="alert alert-danger">
             </div>
 
             <!-- Course information card -->
@@ -37,9 +44,12 @@
                 </div>
 
                 <div class="card-body">
+
                     <div class="row">
 
+                        <!-- Course ID -->
                         <div class="col-md-6 mb-4">
+
                             <label asp-for="CourseID"
                                    class="form-label">
                             </label>
@@ -58,9 +68,12 @@
                             <div class="form-text">
                                 The course ID must be unique.
                             </div>
+
                         </div>
 
+                        <!-- Credits -->
                         <div class="col-md-6 mb-4">
+
                             <label asp-for="Credits"
                                    class="form-label">
                             </label>
@@ -78,9 +91,12 @@
                             <div class="form-text">
                                 Credits must be between 1 and 10.
                             </div>
+
                         </div>
 
-                        <div class="col-12 mb-3">
+                        <!-- Course title -->
+                        <div class="col-md-6 mb-4">
+
                             <label asp-for="Title"
                                    class="form-label">
                             </label>
@@ -92,10 +108,41 @@
                             <span asp-validation-for="Title"
                                   class="text-danger">
                             </span>
+
+                        </div>
+
+                        <!-- Department -->
+                        <div class="col-md-6 mb-4">
+
+                            <label asp-for="DepartmentID"
+                                   class="form-label">
+                                Department
+                            </label>
+
+                            <select asp-for="DepartmentID"
+                                    asp-items="ViewBag.Departments"
+                                    class="form-select">
+
+                                <option value="">
+                                    Select a department
+                                </option>
+
+                            </select>
+
+                            <span asp-validation-for="DepartmentID"
+                                  class="text-danger">
+                            </span>
+
+                            <div class="form-text">
+                                Select the department responsible for this course.
+                            </div>
+
                         </div>
 
                     </div>
+
                 </div>
+
             </div>
 
             <!-- Live preview card -->
@@ -106,13 +153,19 @@
                 </div>
 
                 <div class="card-body">
+
                     <div class="card border-primary">
 
                         <div class="card-body">
 
-                            <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex
+                                justify-content-between
+                                align-items-start
+                                gap-3
+                                mb-3">
 
                                 <div>
+
                                     <h4 id="courseTitlePreview"
                                         class="card-title mb-1">
                                         New Course
@@ -120,22 +173,27 @@
 
                                     <span class="text-muted">
                                         Course ID:
+
                                         <span id="courseIdPreview">
                                             Not entered
                                         </span>
                                     </span>
+
                                 </div>
 
                                 <span class="badge bg-primary">
                                     New
                                 </span>
+
                             </div>
 
                             <hr />
 
                             <div class="row text-center">
 
-                                <div class="col-6">
+                                <!-- Credits preview -->
+                                <div class="col-md-4 mb-3 mb-md-0">
+
                                     <small class="text-muted d-block">
                                         Credits
                                     </small>
@@ -143,9 +201,25 @@
                                     <strong id="courseCreditsPreview">
                                         3
                                     </strong>
+
                                 </div>
 
-                                <div class="col-6">
+                                <!-- Department preview -->
+                                <div class="col-md-4 mb-3 mb-md-0">
+
+                                    <small class="text-muted d-block">
+                                        Department
+                                    </small>
+
+                                    <strong id="courseDepartmentPreview">
+                                        No department selected
+                                    </strong>
+
+                                </div>
+
+                                <!-- Student count preview -->
+                                <div class="col-md-4">
+
                                     <small class="text-muted d-block">
                                         Enrolled Students
                                     </small>
@@ -153,12 +227,17 @@
                                     <strong>
                                         0
                                     </strong>
+
                                 </div>
 
                             </div>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
 
             <div class="d-flex gap-2 mb-4">
@@ -174,60 +253,100 @@
                 </a>
 
             </div>
+
         </form>
+
     </div>
+
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const courseIdInput =
-                document.getElementById("CourseID");
+        document.addEventListener(
+            "DOMContentLoaded",
+            function() {
 
-            const titleInput =
-                document.getElementById("Title");
+                const courseIdInput =
+                    document.getElementById("CourseID");
 
-            const creditsInput =
-                document.getElementById("Credits");
+                const titleInput =
+                    document.getElementById("Title");
 
-            const courseIdPreview =
-                document.getElementById("courseIdPreview");
+                const creditsInput =
+                    document.getElementById("Credits");
 
-            const titlePreview =
-                document.getElementById("courseTitlePreview");
+                const departmentInput =
+                    document.getElementById("DepartmentID");
 
-            const creditsPreview =
-                document.getElementById("courseCreditsPreview");
+                const courseIdPreview =
+                    document.getElementById(
+                        "courseIdPreview"
+                    );
 
-            function updatePreview() {
-                courseIdPreview.textContent =
-                    courseIdInput.value.trim()
-                    || "Not entered";
+                const titlePreview =
+                    document.getElementById(
+                        "courseTitlePreview"
+                    );
 
-                titlePreview.textContent =
-                    titleInput.value.trim()
-                    || "New Course";
+                const creditsPreview =
+                    document.getElementById(
+                        "courseCreditsPreview"
+                    );
 
-                creditsPreview.textContent =
-                    creditsInput.value
-                    || "0";
+                const departmentPreview =
+                    document.getElementById(
+                        "courseDepartmentPreview"
+                    );
+
+                function updatePreview() {
+
+                    courseIdPreview.textContent =
+                        courseIdInput.value.trim()
+                        || "Not entered";
+
+                    titlePreview.textContent =
+                        titleInput.value.trim()
+                        || "New Course";
+
+                    creditsPreview.textContent =
+                        creditsInput.value
+                        || "0";
+
+                    const selectedDepartment =
+                        departmentInput.options[
+                        departmentInput.selectedIndex
+                        ];
+
+                    departmentPreview.textContent =
+                        departmentInput.value
+                            ? selectedDepartment.text
+                            : "No department selected";
+                }
+
+                courseIdInput.addEventListener(
+                    "input",
+                    updatePreview
+                );
+
+                titleInput.addEventListener(
+                    "input",
+                    updatePreview
+                );
+
+                creditsInput.addEventListener(
+                    "input",
+                    updatePreview
+                );
+
+                departmentInput.addEventListener(
+                    "change",
+                    updatePreview
+                );
+
+                updatePreview();
             }
-
-            courseIdInput.addEventListener(
-                "input",
-                updatePreview);
-
-            titleInput.addEventListener(
-                "input",
-                updatePreview);
-
-            creditsInput.addEventListener(
-                "input",
-                updatePreview);
-
-            updatePreview();
-        });
+        );
     </script>
 }

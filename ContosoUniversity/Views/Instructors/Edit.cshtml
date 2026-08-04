@@ -1,16 +1,16 @@
 ﻿@model ContosoUniversity.ViewModels.InstructorFormViewModel
 
 @{
-    ViewData["Title"] = "Create Instructor";
+    ViewData["Title"] = "Edit Instructor";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
 
     <div>
-        <h2 class="mb-1">Create Instructor</h2>
+        <h2 class="mb-1">Edit Instructor</h2>
 
         <p class="text-muted mb-0">
-            Enter the instructor information and course assignments.
+            Update the instructor information and course assignments.
         </p>
     </div>
 
@@ -25,8 +25,12 @@
 
     <div class="col-lg-9">
 
-        <form asp-action="Create"
+        <form asp-action="Edit"
+              asp-route-id="@Model.InstructorID"
               method="post">
+
+            <input asp-for="InstructorID"
+                   type="hidden" />
 
             <div asp-validation-summary="ModelOnly"
                  class="alert alert-danger">
@@ -95,8 +99,7 @@
                             </label>
 
                             <input asp-for="OfficeLocation"
-                                   class="form-control"
-                                   placeholder="Example: Building A, Room 203" />
+                                   class="form-control" />
 
                             <span asp-validation-for="OfficeLocation"
                                   class="text-danger">
@@ -119,7 +122,10 @@
 
                                 @foreach (var department in Model.Departments)
                                 {
-                                    <option value="@department.DepartmentID">
+                                    <option value="@department.DepartmentID"
+                                            selected="@(Model.DepartmentID == department.DepartmentID
+                                                                                        ? "selected"
+                                                                                        : null)">
                                         @department.Name
                                     </option>
                                 }
@@ -146,43 +152,28 @@
 
                 <div class="card-body">
 
-                    @if (Model.Courses.Count == 0)
-                    {
-                        <div class="alert alert-warning mb-0">
-                            No courses are available.
-                        </div>
-                    }
-                    else
-                    {
-                        <label asp-for="SelectedCourseIds"
-                               class="form-label">
-                            Select one or more courses
-                        </label>
+                    <select asp-for="SelectedCourseIds"
+                            class="form-select"
+                            multiple
+                            size="8">
 
-                        <select asp-for="SelectedCourseIds"
-                                class="form-select"
-                                multiple
-                                size="8">
+                        @foreach (var course in Model.Courses)
+                        {
+                            <option value="@course.CourseID"
+                                    selected="@(Model.SelectedCourseIds.Contains(course.CourseID)
+                                                                        ? "selected"
+                                                                        : null)">
+                                @course.CourseID -
+                                @course.Title
+                                (@course.Credits credits)
+                            </option>
+                        }
 
-                            @foreach (var course in Model.Courses)
-                            {
-                                <option value="@course.CourseID">
-                                    @course.CourseID -
-                                    @course.Title
-                                    (@course.Credits credits)
-                                </option>
-                            }
+                    </select>
 
-                        </select>
-
-                        <div class="form-text">
-                            Hold Ctrl to select multiple courses.
-                        </div>
-
-                        <span asp-validation-for="SelectedCourseIds"
-                              class="text-danger">
-                        </span>
-                    }
+                    <div class="form-text">
+                        Hold Ctrl to select or remove multiple courses.
+                    </div>
 
                 </div>
 
@@ -192,7 +183,7 @@
 
                 <button type="submit"
                         class="btn btn-primary">
-                    Create Instructor
+                    Save Changes
                 </button>
 
                 <a asp-action="Index"

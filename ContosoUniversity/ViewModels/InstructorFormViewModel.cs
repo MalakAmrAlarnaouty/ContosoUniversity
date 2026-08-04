@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using ContosoUniversity.Models;
+using System.ComponentModel.DataAnnotations;
 
-namespace ContosoUniversity.Models;
+namespace ContosoUniversity.ViewModels;
 
-public class Instructor
+public class InstructorFormViewModel
 {
     public int InstructorID { get; set; }
 
@@ -19,23 +20,19 @@ public class Instructor
     [Required(ErrorMessage = "Hire date is required.")]
     [DataType(DataType.Date)]
     [Display(Name = "Hire Date")]
-    public DateTime HireDate { get; set; }
+    public DateTime? HireDate { get; set; }
 
     [StringLength(100)]
     [Display(Name = "Office Location")]
     public string? OfficeLocation { get; set; }
 
-    // Do not place [Required] here.
-    // It must be nullable so deleting a department can set it to null.
+    [Required(ErrorMessage = "Select a department.")]
     [Display(Name = "Department")]
     public int? DepartmentID { get; set; }
 
-    public Department? Department { get; set; }
+    public List<int> SelectedCourseIds { get; set; } = new();
 
-    public ICollection<CourseInstructor> CourseInstructors { get; set; }
-        = new List<CourseInstructor>();
+    public List<Department> Departments { get; set; } = new();
 
-    [Display(Name = "Full Name")]
-    public string FullName =>
-        $"{FirstMidName} {LastName}";
+    public List<Course> Courses { get; set; } = new();
 }

@@ -1,0 +1,154 @@
+﻿@model ContosoUniversity.Models.Course
+
+@{
+    ViewData["Title"] = "Edit Course";
+}
+
+<div class="d-flex flex-column
+    flex-md-row
+    justify-content-between
+    align-items-md-center
+    gap-3
+    mb-4">
+
+    <div>
+        <h2 class="mb-1">Edit Course</h2>
+
+        <p class="text-muted mb-0">
+            Update the course information and department.
+        </p>
+    </div>
+
+    <a asp-action="Index"
+       class="btn btn-outline-secondary">
+        Back to Courses
+    </a>
+</div>
+
+<div class="row justify-content-center">
+
+    <div class="col-lg-8">
+
+        <form asp-action="Edit"
+              asp-route-id="@Model.CourseID"
+              method="post">
+
+            <input asp-for="CourseID"
+                   type="hidden" />
+
+            <div asp-validation-summary="ModelOnly"
+                 class="alert alert-danger">
+            </div>
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header">
+                    <strong>Course Information</strong>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-4">
+
+                            <label class="form-label">
+                                Course ID
+                            </label>
+
+                            <input type="text"
+                                   value="@Model.CourseID"
+                                   class="form-control"
+                                   readonly />
+
+                            <div class="form-text">
+                                The course ID cannot be changed.
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+
+                            <label asp-for="Credits"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Credits"
+                                   type="number"
+                                   min="1"
+                                   max="10"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Credits"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+
+                            <label asp-for="Title"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Title"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Title"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+
+                            <label asp-for="DepartmentID"
+                                   class="form-label">
+                                Department
+                            </label>
+
+                            <select asp-for="DepartmentID"
+                                    asp-items="ViewBag.Departments"
+                                    class="form-select">
+
+                                <option value="">
+                                    No department selected
+                                </option>
+
+                            </select>
+
+                            <span asp-validation-for="DepartmentID"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="d-flex gap-2">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Save Changes
+                </button>
+
+                <a asp-action="Index"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

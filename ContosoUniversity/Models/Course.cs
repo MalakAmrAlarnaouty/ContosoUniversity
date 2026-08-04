@@ -20,13 +20,13 @@ public class Course
         ErrorMessage = "The title must be between 2 and 100 characters.")]
     public string Title { get; set; } = string.Empty;
 
+    [Display(Name = "Credits")]
     [Range(
         1,
         10,
         ErrorMessage = "Credits must be between 1 and 10.")]
     public int Credits { get; set; }
 
-    // Nullable because existing courses may not have a department yet.
     [Display(Name = "Department")]
     public int? DepartmentID { get; set; }
 
@@ -34,4 +34,7 @@ public class Course
 
     public ICollection<Enrollment> Enrollments { get; set; }
         = new List<Enrollment>();
+
+    public ICollection<CourseInstructor> CourseInstructors { get; set; }
+       = new List<CourseInstructor>();
 }

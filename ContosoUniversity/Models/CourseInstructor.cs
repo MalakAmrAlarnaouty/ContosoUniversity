@@ -1,6 +1,12 @@
-﻿namespace ContosoUniversity.Models
+﻿namespace ContosoUniversity.Models;
+
+public class CourseInstructor
 {
-    public class CourseInstructor
-    {
-    }
+    public int CourseID { get; set; }
+
+    public int InstructorID { get; set; }
+
+    public Course Course { get; set; } = null!;
+
+    public Instructor Instructor { get; set; } = null!;
 }

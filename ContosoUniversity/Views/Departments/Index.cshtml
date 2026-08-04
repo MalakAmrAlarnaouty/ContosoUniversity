@@ -2,7 +2,6 @@
 
 @{
     ViewData["Title"] = "Departments";
-
     var departments = Model.ToList();
 }
 
@@ -94,10 +93,6 @@
                     @ViewBag.TotalInstructors
                 </h2>
 
-                <small class="text-muted">
-                    Instructor records will be connected next.
-                </small>
-
             </div>
 
         </div>
@@ -157,7 +152,9 @@ else
                                 </td>
 
                                 <td>
-                                    @department.Name
+                                    <strong>
+                                        @department.Name
+                                    </strong>
                                 </td>
 
                                 <td>
@@ -172,7 +169,7 @@ else
 
                                 <td>
                                     <span class="badge bg-secondary rounded-pill">
-                                        0
+                                        @department.Instructors.Count
                                     </span>
                                 </td>
 
@@ -295,7 +292,7 @@ else
                                         </h6>
 
                                         <h4 class="mb-0">
-                                            0
+                                            @department.Instructors.Count
                                         </h4>
 
                                     </div>
@@ -346,14 +343,73 @@ else
 
                         </div>
 
+                        <h5>Department Instructors</h5>
+
+                        @if (department.Instructors.Count == 0)
+                        {
+                            <div class="alert alert-secondary">
+                                No instructors are assigned to this department.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive mb-4">
+
+                                <table class="table table-striped align-middle mb-0">
+
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Instructor ID</th>
+                                            <th>Name</th>
+                                            <th>Office</th>
+                                            <th>Hire Date</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        @foreach (var instructor in
+                                            department.Instructors
+                                                .OrderBy(instructor =>
+                                                    instructor.LastName)
+                                                .ThenBy(instructor =>
+                                                    instructor.FirstMidName))
+                                        {
+                                            <tr>
+
+                                                <td>
+                                                    @instructor.InstructorID
+                                                </td>
+
+                                                <td>
+                                                    @instructor.FullName
+                                                </td>
+
+                                                <td>
+                                                    @(instructor.OfficeLocation
+                                                        ?? "Not assigned")
+                                                </td>
+
+                                                <td>
+                                                    @instructor.HireDate.ToString("MM/dd/yyyy")
+                                                </td>
+
+                                            </tr>
+                                        }
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        }
+
                         <h5>Department Courses</h5>
 
                         @if (department.Courses.Count == 0)
                         {
                             <div class="alert alert-secondary mb-0">
-
                                 No courses are assigned to this department.
-
                             </div>
                         }
                         else
@@ -374,8 +430,7 @@ else
 
                                     <tbody>
 
-                                        @foreach (
-                                            var course in
+                                        @foreach (var course in
                                             department.Courses
                                                 .OrderBy(course =>
                                                     course.Title))
@@ -478,14 +533,12 @@ else
                         <button type="button"
                                 class="btn btn-secondary"
                                 data-bs-dismiss="modal">
-
                             Close
                         </button>
 
                         <button type="button"
                                 class="btn btn-primary"
                                 onclick="showDepartmentEdit(@department.DepartmentID)">
-
                             Edit Department
                         </button>
 
@@ -497,14 +550,12 @@ else
                         <button type="button"
                                 class="btn btn-secondary"
                                 onclick="cancelDepartmentEdit(@department.DepartmentID)">
-
                             Cancel
                         </button>
 
                         <button type="submit"
                                 class="btn btn-success"
                                 form="departmentEditForm-@department.DepartmentID">
-
                             Save Changes
                         </button>
 
@@ -553,15 +604,16 @@ else
                         @department.Name
                     </strong>?
 
-                    @if (department.Courses.Count > 0)
+                    @if (department.Courses.Count > 0 ||
+                         department.Instructors.Count > 0)
                     {
-                        <p class="text-muted mt-3 mb-0">
+                        <div class="alert alert-warning mt-3 mb-0">
 
-                            The department assignment will be removed from
-                            @department.Courses.Count course(s), but the
-                            courses themselves will not be deleted.
+                            The courses and instructors will not be deleted.
 
-                        </p>
+                            Their department assignments will be removed.
+
+                        </div>
                     }
 
                 </div>
@@ -571,7 +623,6 @@ else
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal">
-
                         Cancel
                     </button>
 
@@ -581,7 +632,6 @@ else
 
                         <button type="submit"
                                 class="btn btn-danger">
-
                             Delete Department
                         </button>
 
@@ -676,13 +726,8 @@ else
                         const departmentId =
                             modalElement.dataset.departmentId;
 
-                        resetDepartmentEditForm(
-                            departmentId
-                        );
-
-                        showDepartmentDetails(
-                            departmentId
-                        );
+                        resetDepartmentEditForm(departmentId);
+                        showDepartmentDetails(departmentId);
                     }
                 );
             });

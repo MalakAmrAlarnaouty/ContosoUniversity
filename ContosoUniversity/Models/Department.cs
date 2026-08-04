@@ -14,18 +14,18 @@ public class Department
         ErrorMessage = "Department name must be between 2 and 50 characters.")]
     public string Name { get; set; } = string.Empty;
 
-    [DataType(DataType.Currency)]
+    // Kept for compatibility with the existing database.
     [Column(TypeName = "decimal(18,2)")]
-    [Range(
-        0,
-        100000000,
-        ErrorMessage = "Enter a valid department budget.")]
     public decimal Budget { get; set; }
 
+    [Required]
     [DataType(DataType.Date)]
     [Display(Name = "Start Date")]
     public DateTime StartDate { get; set; }
 
     public ICollection<Course> Courses { get; set; }
         = new List<Course>();
+
+    public ICollection<Instructor> Instructors { get; set; }
+        = new List<Instructor>();
 }
