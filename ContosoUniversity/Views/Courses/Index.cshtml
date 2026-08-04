@@ -30,7 +30,6 @@
 
 @{
     ViewData["Title"] = "Courses";
-
     var courses = Model.ToList();
 }
 
@@ -43,7 +42,9 @@
     mb-4">
 
     <div>
-        <h2 class="mb-1">Courses</h2>
+        <h2 class="mb-1">
+            Courses
+        </h2>
 
         <p class="text-muted mb-0">
             View, search, and manage all available courses.
@@ -54,6 +55,7 @@
        class="btn btn-primary">
         Create New Course
     </a>
+
 </div>
 
 <!-- Success message -->
@@ -69,6 +71,7 @@
                 data-bs-dismiss="alert"
                 aria-label="Close">
         </button>
+
     </div>
 }
 
@@ -85,6 +88,7 @@
                 data-bs-dismiss="alert"
                 aria-label="Close">
         </button>
+
     </div>
 }
 
@@ -92,6 +96,7 @@
 <div class="row mb-4">
 
     <div class="col-md-6 mb-3">
+
         <div class="card shadow-sm h-100">
 
             <div class="card-body">
@@ -105,10 +110,13 @@
                 </h2>
 
             </div>
+
         </div>
+
     </div>
 
     <div class="col-md-6 mb-3">
+
         <div class="card shadow-sm h-100">
 
             <div class="card-body">
@@ -122,7 +130,9 @@
                 </h2>
 
             </div>
+
         </div>
+
     </div>
 
 </div>
@@ -137,16 +147,18 @@
         align-items-md-center
         gap-3">
 
-        <strong>Course List</strong>
+        <strong>
+            Course List
+        </strong>
 
         @if (courses.Count > 0)
         {
-            <div style="width: 100%; max-width: 320px;">
+            <div style="width: 100%; max-width: 360px;">
 
                 <input type="search"
                        id="courseSearch"
                        class="form-control"
-                       placeholder="Search by ID, title or credits..."
+                       placeholder="Search courses, departments or instructors..."
                        aria-label="Search courses" />
 
             </div>
@@ -177,58 +189,135 @@
                        class="table table-hover align-middle mb-0">
 
                     <thead class="table-light">
+
                         <tr>
                             <th>Course ID</th>
                             <th>Title</th>
+                            <th>Department</th>
                             <th>Credits</th>
-                            <th>Enrolled Students</th>
+                            <th>Students</th>
+                            <th>Instructors</th>
                             <th>Actions</th>
                         </tr>
+
                     </thead>
 
                     <tbody id="courseTableBody">
 
                         @foreach (var course in courses)
                         {
+                            string instructorNames = string.Join(
+                                " ",
+                                course.CourseInstructors.Select(
+                                    assignment =>
+                                        $"{assignment.Instructor.FirstMidName} " +
+                                        $"{assignment.Instructor.LastName}"));
+
+                            string departmentName =
+                                course.Department?.Name ??
+                                "No department";
+
                             string searchValue =
                                 $"{course.CourseID} " +
                                 $"{course.Title} " +
+                                $"{departmentName} " +
                                 $"{course.Credits} " +
-                                $"{course.Enrollments.Count}";
+                                $"{course.Enrollments.Count} " +
+                                $"{course.CourseInstructors.Count} " +
+                                $"{instructorNames}";
 
                             <tr class="course-row"
                                 data-search="@searchValue.ToLowerInvariant()">
 
+                                <!-- Clickable course ID -->
                                 <td>
-                                    @course.CourseID
+
+                                    <button type="button"
+                                            class="btn btn-link
+                                        fw-semibold
+                                        course-id-button
+                                        p-0"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#courseModal-@course.CourseID"
+                                            aria-label="View details for @course.Title">
+
+                                        @course.CourseID
+
+                                    </button>
+
                                 </td>
 
                                 <td>
-                                    @course.Title
+                                    <strong>
+                                        @course.Title
+                                    </strong>
+                                </td>
+
+                                <td>
+
+                                    @if (course.Department is not null)
+                                    {
+                                        <span class="badge bg-info text-dark">
+                                            @course.Department.Name
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            Not assigned
+                                        </span>
+                                    }
+
                                 </td>
 
                                 <td>
                                     @course.Credits
                                 </td>
 
+                                <!-- Student count -->
                                 <td>
+
                                     <button type="button"
-                                            class="badge bg-primary
+                                            class="badge
+                                        bg-primary
                                         rounded-pill
                                         border-0
-                                        enrollment-button"
+                                        detail-count-button"
                                             data-bs-toggle="modal"
                                             data-bs-target="#courseModal-@course.CourseID"
-                                            aria-label="View enrollment details for @course.Title">
+                                            aria-label="View students for @course.Title">
 
                                         @course.Enrollments.Count
+
                                     </button>
+
                                 </td>
 
+                                <!-- Instructor count -->
                                 <td>
+
+                                    <button type="button"
+                                            class="badge
+                                        bg-secondary
+                                        rounded-pill
+                                        border-0
+                                        detail-count-button"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#courseModal-@course.CourseID"
+                                            aria-label="View instructors for @course.Title">
+
+                                        @course.CourseInstructors.Count
+
+                                    </button>
+
+                                </td>
+
+                                <td class="text-nowrap">
+
                                     <a asp-action="Edit"
                                        asp-route-id="@course.CourseID"
                                        class="btn btn-sm btn-outline-primary">
+
                                         Edit
                                     </a>
 
@@ -252,6 +341,7 @@
                                             Delete
                                         </button>
                                     }
+
                                 </td>
 
                             </tr>
@@ -285,6 +375,7 @@
 
                     <label for="courseRowsPerPage"
                            class="text-muted text-nowrap">
+
                         Rows per page:
                     </label>
 
@@ -333,13 +424,15 @@
         }
 
     </div>
+
 </div>
 
 <!-- Course information and delete modals -->
 @foreach (var course in courses)
 {
     var gradedEnrollments = course.Enrollments
-        .Where(enrollment => enrollment.Grade.HasValue)
+        .Where(enrollment =>
+            enrollment.Grade.HasValue)
         .ToList();
 
     double? averageGradePoints =
@@ -368,7 +461,10 @@
          aria-labelledby="courseModalLabel-@course.CourseID"
          aria-hidden="true">
 
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog
+            modal-dialog-centered
+            modal-dialog-scrollable
+            modal-xl">
 
             <div class="modal-content">
 
@@ -385,8 +481,15 @@
                         <small class="text-muted">
 
                             Course ID: @course.CourseID
-                            |
+
+                            <span class="mx-1">|</span>
+
                             Credits: @course.Credits
+
+                            <span class="mx-1">|</span>
+
+                            Department:
+                            @(course.Department?.Name ?? "Not assigned")
 
                         </small>
 
@@ -403,10 +506,14 @@
                 <div class="modal-body">
 
                     <!-- Course statistics -->
-                    <div class="row mb-4">
+                    <div class="row
+                        row-cols-1
+                        row-cols-sm-2
+                        row-cols-lg-5
+                        mb-4">
 
-                        <!-- Number of students -->
-                        <div class="col-sm-6 col-lg-3 mb-3">
+                        <!-- Students -->
+                        <div class="col mb-3">
 
                             <div class="card h-100 text-center">
 
@@ -426,8 +533,29 @@
 
                         </div>
 
+                        <!-- Instructors -->
+                        <div class="col mb-3">
+
+                            <div class="card h-100 text-center">
+
+                                <div class="card-body">
+
+                                    <h6 class="text-muted">
+                                        Instructors
+                                    </h6>
+
+                                    <h3 class="mb-0">
+                                        @course.CourseInstructors.Count
+                                    </h3>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
                         <!-- Highest grade -->
-                        <div class="col-sm-6 col-lg-3 mb-3">
+                        <div class="col mb-3">
 
                             <div class="card h-100 text-center">
 
@@ -458,7 +586,7 @@
                         </div>
 
                         <!-- Lowest grade -->
-                        <div class="col-sm-6 col-lg-3 mb-3">
+                        <div class="col mb-3">
 
                             <div class="card h-100 text-center">
 
@@ -489,7 +617,7 @@
                         </div>
 
                         <!-- Average grade -->
-                        <div class="col-sm-6 col-lg-3 mb-3">
+                        <div class="col mb-3">
 
                             <div class="card h-100 text-center">
 
@@ -532,7 +660,115 @@
 
                     </div>
 
-                    <h5>Enrolled Students</h5>
+                    <!-- Instructor list -->
+                    <div class="d-flex
+                        justify-content-between
+                        align-items-center
+                        mb-3">
+
+                        <h5 class="mb-0">
+                            Assigned Instructors
+                        </h5>
+
+                        <span class="badge bg-secondary rounded-pill">
+                            @course.CourseInstructors.Count
+                        </span>
+
+                    </div>
+
+                    @if (course.CourseInstructors.Count == 0)
+                    {
+                        <div class="alert alert-secondary">
+
+                            No instructors are assigned to this course.
+
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive mb-4">
+
+                            <table class="table
+                                table-striped
+                                align-middle
+                                mb-0">
+
+                                <thead class="table-light">
+
+                                    <tr>
+                                        <th>Instructor ID</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Office</th>
+                                        <th>Hire Date</th>
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                    @foreach (
+                                        var assignment in
+                                        course.CourseInstructors
+                                            .OrderBy(assignment =>
+                                                assignment.Instructor.LastName)
+                                            .ThenBy(assignment =>
+                                                assignment.Instructor.FirstMidName))
+                                    {
+                                        var instructor =
+                                            assignment.Instructor;
+
+                                        <tr>
+
+                                            <td>
+                                                @instructor.InstructorID
+                                            </td>
+
+                                            <td>
+                                                <strong>
+                                                    @instructor.FullName
+                                                </strong>
+                                            </td>
+
+                                            <td>
+                                                @(instructor.Department?.Name
+                                                    ?? "No department")
+                                            </td>
+
+                                            <td>
+                                                @(instructor.OfficeLocation
+                                                    ?? "Not assigned")
+                                            </td>
+
+                                            <td>
+                                                @instructor.HireDate.ToString("MM/dd/yyyy")
+                                            </td>
+
+                                        </tr>
+                                    }
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+                    }
+
+                    <!-- Student list -->
+                    <div class="d-flex
+                        justify-content-between
+                        align-items-center
+                        mb-3">
+
+                        <h5 class="mb-0">
+                            Enrolled Students
+                        </h5>
+
+                        <span class="badge bg-primary rounded-pill">
+                            @course.Enrollments.Count
+                        </span>
+
+                    </div>
 
                     @if (course.Enrollments.Count == 0)
                     {
@@ -546,14 +782,20 @@
                     {
                         <div class="table-responsive">
 
-                            <table class="table table-striped align-middle mb-0">
+                            <table class="table
+                                table-striped
+                                align-middle
+                                mb-0">
 
                                 <thead class="table-light">
+
                                     <tr>
                                         <th>Student ID</th>
                                         <th>Student Name</th>
+                                        <th>Department</th>
                                         <th>Grade</th>
                                     </tr>
+
                                 </thead>
 
                                 <tbody>
@@ -578,21 +820,23 @@
                                             </td>
 
                                             <td>
+                                                @(enrollment.Student.Department?.Name
+                                                    ?? course.Department?.Name
+                                                    ?? "Not assigned")
+                                            </td>
+
+                                            <td>
 
                                                 @if (enrollment.Grade.HasValue)
                                                 {
                                                     <span class="badge bg-success">
-
                                                         @enrollment.Grade.Value
-
                                                     </span>
                                                 }
                                                 else
                                                 {
                                                     <span class="badge bg-secondary">
-
                                                         Not graded
-
                                                     </span>
                                                 }
 
@@ -611,6 +855,13 @@
                 </div>
 
                 <div class="modal-footer">
+
+                    <a asp-action="Edit"
+                       asp-route-id="@course.CourseID"
+                       class="btn btn-primary">
+
+                        Edit Course
+                    </a>
 
                     <button type="button"
                             class="btn btn-secondary"
@@ -665,10 +916,21 @@
                         </strong>?
 
                         <p class="text-muted mt-2 mb-0">
-
                             Course ID: @course.CourseID
-
                         </p>
+
+                        @if (course.CourseInstructors.Count > 0)
+                        {
+                            <div class="alert alert-warning mt-3 mb-0">
+
+                                This course is assigned to
+                                @course.CourseInstructors.Count
+                                instructor(s).
+
+                                The instructor assignments will be removed.
+
+                            </div>
+                        }
 
                     </div>
 
@@ -704,225 +966,122 @@
 }
 
 <style>
-    .enrollment-button {
+    .course-id-button {
+        text-decoration: none;
+    }
+
+        .course-id-button:hover {
+            text-decoration: underline;
+        }
+
+    .detail-count-button {
         cursor: pointer;
         font-size: 0.85rem;
     }
 
-        .enrollment-button:hover {
+        .detail-count-button:hover {
             opacity: 0.85;
         }
 </style>
 
 @section Scripts {
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener(
+            "DOMContentLoaded",
+            function() {
 
-            const tableBody =
-                document.getElementById("courseTableBody");
-
-            if (!tableBody) {
-                return;
-            }
-
-            const allRows = Array.from(
-                tableBody.querySelectorAll(".course-row")
-            );
-
-            const searchInput =
-                document.getElementById("courseSearch");
-
-            const rowsPerPageInput =
-                document.getElementById("courseRowsPerPage");
-
-            const pageInformation =
-                document.getElementById("coursePageInformation");
-
-            const pageNumber =
-                document.getElementById("coursePageNumber");
-
-            const previousButton =
-                document.getElementById("previousCoursePage");
-
-            const nextButton =
-                document.getElementById("nextCoursePage");
-
-            const noResultsMessage =
-                document.getElementById("noCourseResults");
-
-            let currentPage = 1;
-
-            function getFilteredRows() {
-
-                const searchText =
-                    searchInput.value
-                        .trim()
-                        .toLowerCase();
-
-                if (searchText === "") {
-                    return allRows;
-                }
-
-                return allRows.filter(function(row) {
-
-                    const rowSearchValue =
-                        row.dataset.search || "";
-
-                    return rowSearchValue.includes(searchText);
-                });
-            }
-
-            function getRowsPerPage() {
-
-                const enteredValue =
-                    Number.parseInt(
-                        rowsPerPageInput.value,
-                        10
+                const tableBody =
+                    document.getElementById(
+                        "courseTableBody"
                     );
 
-                if (Number.isNaN(enteredValue) ||
-                    enteredValue < 1) {
-
-                    return 1;
-                }
-
-                return enteredValue;
-            }
-
-            function renderTable() {
-
-                const filteredRows =
-                    getFilteredRows();
-
-                const rowsPerPage =
-                    getRowsPerPage();
-
-                const totalPages =
-                    Math.max(
-                        1,
-                        Math.ceil(
-                            filteredRows.length /
-                            rowsPerPage
-                        )
-                    );
-
-                if (currentPage > totalPages) {
-                    currentPage = totalPages;
-                }
-
-                if (currentPage < 1) {
-                    currentPage = 1;
-                }
-
-                allRows.forEach(function(row) {
-                    row.classList.add("d-none");
-                });
-
-                if (filteredRows.length === 0) {
-
-                    noResultsMessage.classList.remove(
-                        "d-none"
-                    );
-
-                    pageInformation.textContent =
-                        "0 courses";
-
-                    pageNumber.textContent =
-                        "Page 0 of 0";
-
-                    previousButton.disabled = true;
-                    nextButton.disabled = true;
-
+                if (!tableBody) {
                     return;
                 }
 
-                noResultsMessage.classList.add(
-                    "d-none"
+                const allRows = Array.from(
+                    tableBody.querySelectorAll(
+                        ".course-row"
+                    )
                 );
 
-                const startIndex =
-                    (currentPage - 1) *
-                    rowsPerPage;
-
-                const endIndex =
-                    Math.min(
-                        startIndex + rowsPerPage,
-                        filteredRows.length
+                const searchInput =
+                    document.getElementById(
+                        "courseSearch"
                     );
 
-                filteredRows
-                    .slice(startIndex, endIndex)
-                    .forEach(function(row) {
+                const rowsPerPageInput =
+                    document.getElementById(
+                        "courseRowsPerPage"
+                    );
 
-                        row.classList.remove(
-                            "d-none"
+                const pageInformation =
+                    document.getElementById(
+                        "coursePageInformation"
+                    );
+
+                const pageNumber =
+                    document.getElementById(
+                        "coursePageNumber"
+                    );
+
+                const previousButton =
+                    document.getElementById(
+                        "previousCoursePage"
+                    );
+
+                const nextButton =
+                    document.getElementById(
+                        "nextCoursePage"
+                    );
+
+                const noResultsMessage =
+                    document.getElementById(
+                        "noCourseResults"
+                    );
+
+                let currentPage = 1;
+
+                function getFilteredRows() {
+                    const searchText =
+                        searchInput.value
+                            .trim()
+                            .toLowerCase();
+
+                    if (searchText === "") {
+                        return allRows;
+                    }
+
+                    return allRows.filter(
+                        function(row) {
+                            const rowSearchValue =
+                                row.dataset.search || "";
+
+                            return rowSearchValue.includes(
+                                searchText
+                            );
+                        }
+                    );
+                }
+
+                function getRowsPerPage() {
+                    const enteredValue =
+                        Number.parseInt(
+                            rowsPerPageInput.value,
+                            10
                         );
-                    });
 
-                pageInformation.textContent =
-                    `${startIndex + 1} - ` +
-                    `${endIndex} of ` +
-                    `${filteredRows.length}`;
-
-                pageNumber.textContent =
-                    `Page ${currentPage} of ${totalPages}`;
-
-                previousButton.disabled =
-                    currentPage === 1;
-
-                nextButton.disabled =
-                    currentPage === totalPages;
-            }
-
-            searchInput.addEventListener(
-                "input",
-                function() {
-
-                    currentPage = 1;
-                    renderTable();
-                }
-            );
-
-            rowsPerPageInput.addEventListener(
-                "input",
-                function() {
-
-                    currentPage = 1;
-                    renderTable();
-                }
-            );
-
-            rowsPerPageInput.addEventListener(
-                "change",
-                function() {
-
-                    if (!rowsPerPageInput.value ||
-                        Number(rowsPerPageInput.value) < 1) {
-
-                        rowsPerPageInput.value = 1;
+                    if (
+                        Number.isNaN(enteredValue) ||
+                        enteredValue < 1
+                    ) {
+                        return 1;
                     }
 
-                    currentPage = 1;
-                    renderTable();
+                    return enteredValue;
                 }
-            );
 
-            previousButton.addEventListener(
-                "click",
-                function() {
-
-                    if (currentPage > 1) {
-
-                        currentPage--;
-                        renderTable();
-                    }
-                }
-            );
-
-            nextButton.addEventListener(
-                "click",
-                function() {
-
+                function renderTable() {
                     const filteredRows =
                         getFilteredRows();
 
@@ -938,15 +1097,146 @@
                             )
                         );
 
-                    if (currentPage < totalPages) {
+                    if (currentPage > totalPages) {
+                        currentPage = totalPages;
+                    }
 
-                        currentPage++;
+                    if (currentPage < 1) {
+                        currentPage = 1;
+                    }
+
+                    allRows.forEach(
+                        function(row) {
+                            row.classList.add(
+                                "d-none"
+                            );
+                        }
+                    );
+
+                    if (filteredRows.length === 0) {
+                        noResultsMessage.classList.remove(
+                            "d-none"
+                        );
+
+                        pageInformation.textContent =
+                            "0 courses";
+
+                        pageNumber.textContent =
+                            "Page 0 of 0";
+
+                        previousButton.disabled = true;
+                        nextButton.disabled = true;
+
+                        return;
+                    }
+
+                    noResultsMessage.classList.add(
+                        "d-none"
+                    );
+
+                    const startIndex =
+                        (currentPage - 1) *
+                        rowsPerPage;
+
+                    const endIndex =
+                        Math.min(
+                            startIndex + rowsPerPage,
+                            filteredRows.length
+                        );
+
+                    filteredRows
+                        .slice(startIndex, endIndex)
+                        .forEach(function(row) {
+                            row.classList.remove(
+                                "d-none"
+                            );
+                        });
+
+                    pageInformation.textContent =
+                        `${startIndex + 1} - ` +
+                        `${endIndex} of ` +
+                        `${filteredRows.length}`;
+
+                    pageNumber.textContent =
+                        `Page ${currentPage} of ${totalPages}`;
+
+                    previousButton.disabled =
+                        currentPage === 1;
+
+                    nextButton.disabled =
+                        currentPage === totalPages;
+                }
+
+                searchInput.addEventListener(
+                    "input",
+                    function() {
+                        currentPage = 1;
                         renderTable();
                     }
-                }
-            );
+                );
 
-            renderTable();
-        });
+                rowsPerPageInput.addEventListener(
+                    "input",
+                    function() {
+                        currentPage = 1;
+                        renderTable();
+                    }
+                );
+
+                rowsPerPageInput.addEventListener(
+                    "change",
+                    function() {
+                        if (
+                            !rowsPerPageInput.value ||
+                            Number(
+                                rowsPerPageInput.value
+                            ) < 1
+                        ) {
+                            rowsPerPageInput.value = 1;
+                        }
+
+                        currentPage = 1;
+                        renderTable();
+                    }
+                );
+
+                previousButton.addEventListener(
+                    "click",
+                    function() {
+                        if (currentPage > 1) {
+                            currentPage--;
+                            renderTable();
+                        }
+                    }
+                );
+
+                nextButton.addEventListener(
+                    "click",
+                    function() {
+                        const filteredRows =
+                            getFilteredRows();
+
+                        const rowsPerPage =
+                            getRowsPerPage();
+
+                        const totalPages =
+                            Math.max(
+                                1,
+                                Math.ceil(
+                                    filteredRows.length /
+                                    rowsPerPage
+                                )
+                            );
+
+                        if (currentPage < totalPages) {
+                            currentPage++;
+                            renderTable();
+                        }
+                    }
+                );
+
+                renderTable();
+            }
+        );
     </script>
 }

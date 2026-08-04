@@ -22,7 +22,13 @@ public class CoursesController : Controller
             .AsNoTracking()
             .Include(course => course.Department)
             .Include(course => course.Enrollments)
-            .ThenInclude(enrollment => enrollment.Student)
+                .ThenInclude(enrollment => enrollment.Student)
+                    .ThenInclude(student => student.Department)
+            .Include(course => course.CourseInstructors)
+                .ThenInclude(courseInstructor =>
+                    courseInstructor.Instructor)
+                    .ThenInclude(instructor =>
+                        instructor.Department)
             .OrderBy(course => course.Title)
             .ToListAsync();
 
@@ -57,13 +63,18 @@ public class CoursesController : Controller
         [Bind("CourseID,Title,Credits,DepartmentID")]
         Course course)
     {
-        course.Title = course.Title?.Trim() ?? string.Empty;
+        course.Title =
+            course.Title?.Trim() ?? string.Empty;
 
-        await ValidateCourseAsync(course, checkCourseId: true);
+        await ValidateCourseAsync(
+            course,
+            checkCourseId: true);
 
         if (!ModelState.IsValid)
         {
-            await LoadDepartmentsAsync(course.DepartmentID);
+            await LoadDepartmentsAsync(
+                course.DepartmentID);
+
             return View(course);
         }
 
@@ -81,14 +92,16 @@ public class CoursesController : Controller
     {
         Course? course = await _context.Courses
             .AsNoTracking()
-            .FirstOrDefaultAsync(course => course.CourseID == id);
+            .FirstOrDefaultAsync(course =>
+                course.CourseID == id);
 
         if (course is null)
         {
             return NotFound();
         }
 
-        await LoadDepartmentsAsync(course.DepartmentID);
+        await LoadDepartmentsAsync(
+            course.DepartmentID);
 
         return View(course);
     }
@@ -150,6 +163,8 @@ public class CoursesController : Controller
         Course? course = await _context.Courses
             .Include(existingCourse =>
                 existingCourse.Enrollments)
+            .Include(existingCourse =>
+                existingCourse.CourseInstructors)
             .FirstOrDefaultAsync(existingCourse =>
                 existingCourse.CourseID == id);
 
@@ -166,7 +181,12 @@ public class CoursesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        // Remove instructor assignments before deleting the course.
+        _context.CourseInstructors.RemoveRange(
+            course.CourseInstructors);
+
         _context.Courses.Remove(course);
+
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] =
@@ -188,10 +208,11 @@ public class CoursesController : Controller
 
         if (checkCourseId)
         {
-            bool courseIdExists = await _context.Courses
-                .AnyAsync(existingCourse =>
-                    existingCourse.CourseID ==
-                    course.CourseID);
+            bool courseIdExists =
+                await _context.Courses
+                    .AnyAsync(existingCourse =>
+                        existingCourse.CourseID ==
+                        course.CourseID);
 
             if (courseIdExists)
             {
@@ -206,13 +227,15 @@ public class CoursesController : Controller
             string normalizedTitle =
                 course.Title.ToUpper();
 
-            bool titleExists = await _context.Courses
-                .AnyAsync(existingCourse =>
-                    existingCourse.CourseID != course.CourseID &&
-                    existingCourse.Title.ToUpper() ==
-                    normalizedTitle);
+            bool courseTitleExists =
+                await _context.Courses
+                    .AnyAsync(existingCourse =>
+                        existingCourse.CourseID !=
+                        course.CourseID &&
+                        existingCourse.Title.ToUpper() ==
+                        normalizedTitle);
 
-            if (titleExists)
+            if (courseTitleExists)
             {
                 ModelState.AddModelError(
                     nameof(course.Title),

@@ -8,6 +8,10 @@
         ViewBag.AllCourses as List<Course>
         ?? new List<Course>();
 
+    List<Department> allDepartments =
+        ViewBag.AllDepartments as List<Department>
+        ?? new List<Department>();
+
     var students = Model.ToList();
 }
 
@@ -22,7 +26,7 @@
         <h2 class="mb-1">Students</h2>
 
         <p class="text-muted mb-0">
-            View and manage students, courses, and grades.
+            View and manage students, departments, courses, and grades.
         </p>
     </div>
 
@@ -30,6 +34,7 @@
        class="btn btn-primary">
         Create New Student
     </a>
+
 </div>
 
 @if (TempData["SuccessMessage"] is not null)
@@ -44,6 +49,7 @@
                 data-bs-dismiss="alert"
                 aria-label="Close">
         </button>
+
     </div>
 }
 
@@ -59,18 +65,21 @@
                 data-bs-dismiss="alert"
                 aria-label="Close">
         </button>
+
     </div>
 }
 
 @if (students.Count == 0)
 {
     <div class="alert alert-secondary">
+
         No students are currently available.
 
         <a asp-action="Create"
            class="alert-link">
             Create the first student
         </a>.
+
     </div>
 }
 else
@@ -78,20 +87,20 @@ else
     <div class="card shadow-sm mb-4">
 
         <div class="card-header d-flex
-            flex-column
-            flex-md-row
-            justify-content-between
-            align-items-md-center
-            gap-3">
+                    flex-column
+                    flex-md-row
+                    justify-content-between
+                    align-items-md-center
+                    gap-3">
 
             <strong>Student List</strong>
 
-            <div style="width: 100%; max-width: 320px;">
+            <div style="width: 100%; max-width: 340px;">
 
                 <input type="search"
                        id="studentSearch"
                        class="form-control"
-                       placeholder="Search students..."
+                       placeholder="Search students or departments..."
                        aria-label="Search students" />
 
             </div>
@@ -106,24 +115,32 @@ else
                        class="table table-hover align-middle mb-0">
 
                     <thead class="table-light">
+
                         <tr>
                             <th>Student ID</th>
                             <th>Last Name</th>
                             <th>First Name</th>
+                            <th>Department</th>
                             <th>Enrollment Date</th>
                             <th>Courses</th>
                             <th>Actions</th>
                         </tr>
+
                     </thead>
 
                     <tbody id="studentTableBody">
 
                         @foreach (var student in students)
                         {
+                            string departmentName =
+                                student.Department?.Name
+                                ?? "Not assigned";
+
                             string studentSearchValue =
                                 $"{student.ID} " +
                                 $"{student.FirstMidName} " +
                                 $"{student.LastName} " +
+                                $"{departmentName} " +
                                 $"{student.EnrollmentDate:MM/dd/yyyy} " +
                                 $"{student.Enrollments.Count}";
 
@@ -143,7 +160,24 @@ else
                                 </td>
 
                                 <td>
-                                    @(student.EnrollmentDate.ToString("MM/dd/yyyy"))
+
+                                    @if (student.Department is not null)
+                                    {
+                                        <span class="badge bg-info text-dark">
+                                            @student.Department.Name
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            Not assigned
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <td>
+                                    @student.EnrollmentDate.ToString("MM/dd/yyyy")
                                 </td>
 
                                 <td>
@@ -153,6 +187,7 @@ else
                                 </td>
 
                                 <td>
+
                                     <button type="button"
                                             class="btn btn-link p-0 align-baseline"
                                             data-bs-toggle="modal"
@@ -170,6 +205,7 @@ else
 
                                         Delete
                                     </button>
+
                                 </td>
 
                             </tr>
@@ -189,19 +225,18 @@ else
             </div>
 
             <div class="d-flex
-                flex-column
-                flex-md-row
-                justify-content-end
-                align-items-md-center
-                gap-3
-                border-top
-                p-3">
+                        flex-column
+                        flex-md-row
+                        justify-content-end
+                        align-items-md-center
+                        gap-3
+                        border-top
+                        p-3">
 
                 <div class="d-flex align-items-center gap-2">
 
                     <label for="studentRowsPerPage"
                            class="text-muted text-nowrap">
-
                         Rows per page:
                     </label>
 
@@ -310,11 +345,14 @@ else
                                     : student.FirstMidName
                                         .Substring(0, 1)
                                         .ToUpper())
+
                             </div>
 
                             <h4 class="mb-1">
+
                                 @student.FirstMidName
                                 @student.LastName
+
                             </h4>
 
                             <span class="text-muted">
@@ -325,7 +363,7 @@ else
 
                         <div class="row mb-4">
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-sm-6 col-lg-3 mb-3">
 
                                 <div class="card h-100 text-center">
 
@@ -345,7 +383,28 @@ else
 
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-sm-6 col-lg-3 mb-3">
+
+                                <div class="card h-100 text-center">
+
+                                    <div class="card-body">
+
+                                        <h6 class="text-muted">
+                                            Department
+                                        </h6>
+
+                                        <h5 class="mb-0">
+                                            @(student.Department?.Name
+                                                ?? "Not assigned")
+                                        </h5>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-sm-6 col-lg-3 mb-3">
 
                                 <div class="card h-100 text-center">
 
@@ -355,9 +414,9 @@ else
                                             Enrollment Date
                                         </h6>
 
-                                        <h4 class="mb-0">
-                                            @(student.EnrollmentDate.ToString("MM/dd/yyyy"))
-                                        </h4>
+                                        <h5 class="mb-0">
+                                            @student.EnrollmentDate.ToString("MM/dd/yyyy")
+                                        </h5>
 
                                     </div>
 
@@ -365,7 +424,7 @@ else
 
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-sm-6 col-lg-3 mb-3">
 
                                 <div class="card h-100 text-center">
 
@@ -392,22 +451,30 @@ else
                         @if (student.Enrollments.Count == 0)
                         {
                             <div class="alert alert-secondary mb-0">
+
                                 This student is not enrolled in any courses.
+
                             </div>
                         }
                         else
                         {
                             <div class="table-responsive">
 
-                                <table class="table table-striped align-middle mb-0">
+                                <table class="table
+                                              table-striped
+                                              align-middle
+                                              mb-0">
 
                                     <thead class="table-light">
+
                                         <tr>
                                             <th>Course ID</th>
                                             <th>Course Name</th>
+                                            <th>Department</th>
                                             <th>Credits</th>
                                             <th>Grade</th>
                                         </tr>
+
                                     </thead>
 
                                     <tbody>
@@ -426,6 +493,12 @@ else
 
                                                 <td>
                                                     @enrollment.Course.Title
+                                                </td>
+
+                                                <td>
+                                                    @(enrollment.Course.Department?.Name
+                                                        ?? student.Department?.Name
+                                                        ?? "Not assigned")
                                                 </td>
 
                                                 <td>
@@ -526,9 +599,46 @@ else
                                             <input type="date"
                                                    id="enrollmentDate-@student.ID"
                                                    name="EnrollmentDate"
-                                                   value="@(student.EnrollmentDate.ToString("yyyy-MM-dd"))"
+                                                   value="@student.EnrollmentDate.ToString("yyyy-MM-dd")"
                                                    class="form-control"
                                                    required />
+
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+
+                                            <label for="departmentSelect-@student.ID"
+                                                   class="form-label">
+
+                                                Faculty / Department
+                                            </label>
+
+                                            <select id="departmentSelect-@student.ID"
+                                                    name="DepartmentID"
+                                                    class="form-select
+                                                           student-department-select"
+                                                    data-student-id="@student.ID"
+                                                    required>
+
+                                                <option value="">
+                                                    Select faculty or department
+                                                </option>
+
+                                                @foreach (
+                                                    var department in
+                                                    allDepartments)
+                                                {
+                                                    <option value="@department.DepartmentID"
+                                                            selected="@(student.DepartmentID ==
+                                                                department.DepartmentID
+                                                                    ? "selected"
+                                                                    : null)">
+
+                                                        @department.Name
+                                                    </option>
+                                                }
+
+                                            </select>
 
                                         </div>
 
@@ -547,14 +657,33 @@ else
                                 <div class="card-body">
 
                                     <p class="text-muted">
-                                        Select the courses for this student and
-                                        choose a grade for each selected course.
+
+                                        Only courses assigned to the selected
+                                        department are available.
+
                                     </p>
+
+                                    <div id="selectEditDepartment-@student.ID"
+                                         class="alert alert-info d-none">
+
+                                        Select a department to view its courses.
+
+                                    </div>
+
+                                    <div id="noEditCourses-@student.ID"
+                                         class="alert alert-warning d-none">
+
+                                        No courses are assigned to the selected
+                                        department.
+
+                                    </div>
 
                                     @if (allCourses.Count == 0)
                                     {
                                         <div class="alert alert-secondary mb-0">
+
                                             No courses are currently available.
+
                                         </div>
                                     }
                                     else
@@ -578,7 +707,12 @@ else
                                                 string gradeSelectId =
                                                     $"grade-{student.ID}-{course.CourseID}";
 
-                                                <div class="col-md-6 col-xl-4">
+                                                <div class="col-md-6
+                                                            col-xl-4
+                                                            student-course-option
+                                                            student-@student.ID-course-option"
+                                                     data-department-id="@(course.DepartmentID?.ToString()
+                                                        ?? string.Empty)">
 
                                                     <input type="checkbox"
                                                            class="course-checkbox
@@ -588,12 +722,18 @@ else
                                                            name="SelectedCourseIds"
                                                            value="@course.CourseID"
                                                            data-grade-select-id="@gradeSelectId"
-                                                           checked="@(isSelected ? "checked" : null)" />
+                                                           data-student-id="@student.ID"
+                                                           checked="@(isSelected
+                                                               ? "checked"
+                                                               : null)" />
 
-                                                    <div class="card course-selection-card h-100">
+                                                    <div class="card
+                                                                course-selection-card
+                                                                h-100">
 
                                                         <label for="@checkboxId"
-                                                               class="card-body course-card-label">
+                                                               class="card-body
+                                                                      course-card-label">
 
                                                             <div class="d-flex
                                                                         justify-content-between
@@ -608,8 +748,10 @@ else
                                                                     </h6>
 
                                                                     <small class="text-muted">
+
                                                                         Course ID:
                                                                         @course.CourseID
+
                                                                     </small>
 
                                                                 </div>
@@ -617,8 +759,22 @@ else
                                                                 <span class="badge
                                                                              bg-primary
                                                                              selected-badge">
+
                                                                     Selected
                                                                 </span>
+
+                                                            </div>
+
+                                                            <div class="mb-3">
+
+                                                                <small class="text-muted d-block">
+                                                                    Department
+                                                                </small>
+
+                                                                <strong>
+                                                                    @(course.Department?.Name
+                                                                        ?? "Not assigned")
+                                                                </strong>
 
                                                             </div>
 
@@ -656,13 +812,17 @@ else
 
                                                             <label for="@gradeSelectId"
                                                                    class="form-label">
+
                                                                 Student Grade
                                                             </label>
 
                                                             <select id="@gradeSelectId"
                                                                     name="EnrollmentGrades[@course.CourseID]"
-                                                                    class="form-select course-grade-select"
-                                                                    disabled="@(!isSelected ? "disabled" : null)">
+                                                                    class="form-select
+                                                                           course-grade-select"
+                                                                    disabled="@(!isSelected
+                                                                        ? "disabled"
+                                                                        : null)">
 
                                                                 <option value="">
                                                                     Not graded
@@ -677,7 +837,10 @@ else
                                                                         grade;
 
                                                                     <option value="@grade"
-                                                                            selected="@(gradeSelected ? "selected" : null)">
+                                                                            selected="@(gradeSelected
+                                                                                ? "selected"
+                                                                                : null)">
+
                                                                         @grade
                                                                     </option>
                                                                 }
@@ -788,8 +951,10 @@ else
                     </strong>?
 
                     <p class="text-danger mt-3 mb-0">
-                        All of this student's course enrollments and grades
-                        will also be deleted.
+
+                        All of this student's course enrollments and
+                        grades will also be deleted.
+
                     </p>
 
                 </div>
@@ -875,42 +1040,6 @@ else
 
 @section Scripts {
     <script>
-        function showEditForm(studentId) {
-            document
-                .getElementById(`detailsView-${studentId}`)
-                .classList.add("d-none");
-
-            document
-                .getElementById(`detailsButtons-${studentId}`)
-                .classList.add("d-none");
-
-            document
-                .getElementById(`editView-${studentId}`)
-                .classList.remove("d-none");
-
-            document
-                .getElementById(`editButtons-${studentId}`)
-                .classList.remove("d-none");
-        }
-
-        function showStudentDetails(studentId) {
-            document
-                .getElementById(`editView-${studentId}`)
-                .classList.add("d-none");
-
-            document
-                .getElementById(`editButtons-${studentId}`)
-                .classList.add("d-none");
-
-            document
-                .getElementById(`detailsView-${studentId}`)
-                .classList.remove("d-none");
-
-            document
-                .getElementById(`detailsButtons-${studentId}`)
-                .classList.remove("d-none");
-        }
-
         function updateGradeSelect(
             courseCheckbox,
             clearGradeWhenUnchecked) {
@@ -919,20 +1048,180 @@ else
                 courseCheckbox.dataset.gradeSelectId;
 
             const gradeSelect =
-                document.getElementById(gradeSelectId);
+                document.getElementById(
+                    gradeSelectId
+                );
 
             if (!gradeSelect) {
                 return;
             }
 
             gradeSelect.disabled =
+                courseCheckbox.disabled ||
                 !courseCheckbox.checked;
 
-            if (!courseCheckbox.checked &&
-                clearGradeWhenUnchecked) {
-
+            if (
+                !courseCheckbox.checked &&
+                clearGradeWhenUnchecked
+            ) {
                 gradeSelect.value = "";
             }
+        }
+
+        function filterStudentEditCourses(
+            studentId,
+            clearHiddenSelections) {
+
+            const departmentSelect =
+                document.getElementById(
+                    `departmentSelect-${studentId}`
+                );
+
+            const noCoursesMessage =
+                document.getElementById(
+                    `noEditCourses-${studentId}`
+                );
+
+            const selectDepartmentMessage =
+                document.getElementById(
+                    `selectEditDepartment-${studentId}`
+                );
+
+            if (!departmentSelect) {
+                return;
+            }
+
+            const selectedDepartmentId =
+                departmentSelect.value;
+
+            const courseOptions =
+                document.querySelectorAll(
+                    `.student-${studentId}-course-option`
+                );
+
+            let visibleCourseCount = 0;
+
+            courseOptions.forEach(
+                function (option) {
+
+                    const courseDepartmentId =
+                        option.dataset.departmentId || "";
+
+                    const belongsToDepartment =
+                        selectedDepartmentId !== "" &&
+                        courseDepartmentId ===
+                        selectedDepartmentId;
+
+                    option.classList.toggle(
+                        "d-none",
+                        !belongsToDepartment
+                    );
+
+                    const checkbox =
+                        option.querySelector(
+                            ".edit-course-checkbox"
+                        );
+
+                    if (!checkbox) {
+                        return;
+                    }
+
+                    checkbox.disabled =
+                        !belongsToDepartment;
+
+                    if (
+                        !belongsToDepartment &&
+                        clearHiddenSelections
+                    ) {
+                        checkbox.checked = false;
+                    }
+
+                    if (!belongsToDepartment) {
+                        checkbox.checked = false;
+                    }
+
+                    updateGradeSelect(
+                        checkbox,
+                        !belongsToDepartment
+                    );
+
+                    if (belongsToDepartment) {
+                        visibleCourseCount++;
+                    }
+                }
+            );
+
+            if (selectDepartmentMessage) {
+                selectDepartmentMessage.classList.toggle(
+                    "d-none",
+                    selectedDepartmentId !== ""
+                );
+            }
+
+            if (noCoursesMessage) {
+                noCoursesMessage.classList.toggle(
+                    "d-none",
+                    selectedDepartmentId === "" ||
+                    visibleCourseCount > 0
+                );
+            }
+        }
+
+        function showEditForm(studentId) {
+            document
+                .getElementById(
+                    `detailsView-${studentId}`
+                )
+                .classList.add("d-none");
+
+            document
+                .getElementById(
+                    `detailsButtons-${studentId}`
+                )
+                .classList.add("d-none");
+
+            document
+                .getElementById(
+                    `editView-${studentId}`
+                )
+                .classList.remove("d-none");
+
+            document
+                .getElementById(
+                    `editButtons-${studentId}`
+                )
+                .classList.remove("d-none");
+
+            filterStudentEditCourses(
+                studentId,
+                false
+            );
+        }
+
+        function showStudentDetails(studentId) {
+            document
+                .getElementById(
+                    `editView-${studentId}`
+                )
+                .classList.add("d-none");
+
+            document
+                .getElementById(
+                    `editButtons-${studentId}`
+                )
+                .classList.add("d-none");
+
+            document
+                .getElementById(
+                    `detailsView-${studentId}`
+                )
+                .classList.remove("d-none");
+
+            document
+                .getElementById(
+                    `detailsButtons-${studentId}`
+                )
+                .classList.remove("d-none");
         }
 
         function resetStudentEditForm(studentId) {
@@ -948,14 +1237,21 @@ else
             form.reset();
 
             form
-                .querySelectorAll(".edit-course-checkbox")
-                .forEach(function(checkbox) {
+                .querySelectorAll(
+                    ".edit-course-checkbox"
+                )
+                .forEach(function (checkbox) {
 
                     updateGradeSelect(
                         checkbox,
                         false
                     );
                 });
+
+            filterStudentEditCourses(
+                studentId,
+                false
+            );
         }
 
         function cancelStudentEdit(studentId) {
@@ -964,39 +1260,63 @@ else
         }
 
         document
-            .querySelectorAll(".edit-course-checkbox")
-            .forEach(function(checkbox) {
+            .querySelectorAll(
+                ".edit-course-checkbox"
+            )
+            .forEach(function (checkbox) {
 
                 checkbox.addEventListener(
                     "change",
-                    function() {
+                    function () {
 
                         updateGradeSelect(
                             checkbox,
                             true
                         );
-                    });
+                    }
+                );
+            });
+
+        document
+            .querySelectorAll(
+                ".student-department-select"
+            )
+            .forEach(function (departmentSelect) {
+
+                departmentSelect.addEventListener(
+                    "change",
+                    function () {
+
+                        filterStudentEditCourses(
+                            departmentSelect.dataset.studentId,
+                            true
+                        );
+                    }
+                );
             });
 
         document
             .querySelectorAll(".student-modal")
-            .forEach(function(modalElement) {
+            .forEach(function (modalElement) {
 
                 modalElement.addEventListener(
                     "hidden.bs.modal",
-                    function() {
+                    function () {
 
                         const studentId =
                             modalElement.dataset.studentId;
 
                         resetStudentEditForm(studentId);
                         showStudentDetails(studentId);
-                    });
+                    }
+                );
             });
 
         // Student table pagination
         const studentTableBody =
-            document.getElementById("studentTableBody");
+            document.getElementById(
+                "studentTableBody"
+            );
 
         if (studentTableBody) {
 
@@ -1054,7 +1374,7 @@ else
                 }
 
                 return allStudentRows.filter(
-                    function(row) {
+                    function (row) {
 
                         const searchableValue =
                             row.dataset.search || "";
@@ -1073,9 +1393,10 @@ else
                         10
                     );
 
-                if (Number.isNaN(enteredValue) ||
-                    enteredValue < 1) {
-
+                if (
+                    Number.isNaN(enteredValue) ||
+                    enteredValue < 1
+                ) {
                     return 1;
                 }
 
@@ -1107,8 +1428,7 @@ else
                 }
 
                 allStudentRows.forEach(
-                    function(row) {
-
+                    function (row) {
                         row.classList.add("d-none");
                     }
                 );
@@ -1147,7 +1467,7 @@ else
 
                 filteredRows
                     .slice(startIndex, endIndex)
-                    .forEach(function(row) {
+                    .forEach(function (row) {
 
                         row.classList.remove(
                             "d-none"
@@ -1172,7 +1492,7 @@ else
 
             studentSearchInput.addEventListener(
                 "input",
-                function() {
+                function () {
 
                     currentStudentPage = 1;
                     renderStudentTable();
@@ -1181,7 +1501,7 @@ else
 
             studentRowsPerPageInput.addEventListener(
                 "input",
-                function() {
+                function () {
 
                     currentStudentPage = 1;
                     renderStudentTable();
@@ -1190,13 +1510,14 @@ else
 
             studentRowsPerPageInput.addEventListener(
                 "change",
-                function() {
+                function () {
 
-                    if (!studentRowsPerPageInput.value ||
+                    if (
+                        !studentRowsPerPageInput.value ||
                         Number(
                             studentRowsPerPageInput.value
-                        ) < 1) {
-
+                        ) < 1
+                    ) {
                         studentRowsPerPageInput.value = 1;
                     }
 
@@ -1207,10 +1528,9 @@ else
 
             previousStudentButton.addEventListener(
                 "click",
-                function() {
+                function () {
 
                     if (currentStudentPage > 1) {
-
                         currentStudentPage--;
                         renderStudentTable();
                     }
@@ -1219,7 +1539,7 @@ else
 
             nextStudentButton.addEventListener(
                 "click",
-                function() {
+                function () {
 
                     const filteredRows =
                         getFilteredStudentRows();
@@ -1237,7 +1557,6 @@ else
                         );
 
                     if (currentStudentPage < totalPages) {
-
                         currentStudentPage++;
                         renderStudentTable();
                     }
@@ -1247,5 +1566,4 @@ else
             renderStudentTable();
         }
     </script>
-}
 }

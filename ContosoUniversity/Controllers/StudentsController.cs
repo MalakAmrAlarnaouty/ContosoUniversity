@@ -20,8 +20,10 @@ public class StudentsController : Controller
     {
         List<Student> students = await _context.Students
             .AsNoTracking()
+            .Include(student => student.Department)
             .Include(student => student.Enrollments)
-            .ThenInclude(enrollment => enrollment.Course)
+                .ThenInclude(enrollment => enrollment.Course)
+                    .ThenInclude(course => course.Department)
             .OrderBy(student => student.LastName)
             .ThenBy(student => student.FirstMidName)
             .ToListAsync();
@@ -29,8 +31,15 @@ public class StudentsController : Controller
         // Used by the course cards inside the Edit Student modal.
         ViewBag.AllCourses = await _context.Courses
             .AsNoTracking()
+            .Include(course => course.Department)
             .Include(course => course.Enrollments)
             .OrderBy(course => course.Title)
+            .ToListAsync();
+
+        // Used by the department dropdown inside the Edit Student modal.
+        ViewBag.AllDepartments = await _context.Departments
+            .AsNoTracking()
+            .OrderBy(department => department.Name)
             .ToListAsync();
 
         return View(students);
@@ -42,6 +51,7 @@ public class StudentsController : Controller
         CreateStudentViewModel model = new()
         {
             EnrollmentDate = DateTime.Today,
+            Departments = await GetDepartmentSelectionsAsync(),
             Courses = await GetCourseSelectionsAsync()
         };
 
@@ -54,11 +64,15 @@ public class StudentsController : Controller
     public async Task<IActionResult> Create(
         CreateStudentViewModel model)
     {
-        model.SelectedCourseIds ??= new List<int>();
+        NormalizeCreateModel(model);
 
-        List<int> selectedCourseIds = model.SelectedCourseIds
-            .Distinct()
-            .ToList();
+        List<int> selectedCourseIds =
+            model.SelectedCourseIds
+                .Distinct()
+                .ToList();
+
+        bool departmentExists =
+            await ValidateCreateDepartmentAsync(model);
 
         if (selectedCourseIds.Count == 0)
         {
@@ -67,54 +81,49 @@ public class StudentsController : Controller
                 "Select at least one course.");
         }
 
-        List<int> validCourseIds = new();
-
-        if (selectedCourseIds.Count > 0)
-        {
-            validCourseIds = await _context.Courses
-                .Where(course =>
-                    selectedCourseIds.Contains(course.CourseID))
-                .Select(course => course.CourseID)
-                .ToListAsync();
-
-            if (validCourseIds.Count != selectedCourseIds.Count)
-            {
-                ModelState.AddModelError(
-                    nameof(model.SelectedCourseIds),
-                    "One or more selected courses are invalid.");
-            }
-        }
+        List<int> validCourseIds =
+            await ValidateCreateCoursesAsync(
+                model,
+                selectedCourseIds,
+                departmentExists);
 
         if (!ModelState.IsValid)
         {
-            model.Courses = await GetCourseSelectionsAsync();
+            model.Departments =
+                await GetDepartmentSelectionsAsync();
+
+            model.Courses =
+                await GetCourseSelectionsAsync();
+
             return View(model);
         }
 
         Student student = new()
         {
-            FirstMidName = model.FirstMidName.Trim(),
-            LastName = model.LastName.Trim(),
-            EnrollmentDate = model.EnrollmentDate!.Value
+            FirstMidName = model.FirstMidName,
+            LastName = model.LastName,
+            EnrollmentDate = model.EnrollmentDate!.Value,
+            DepartmentID = model.DepartmentID
         };
 
         _context.Students.Add(student);
         await _context.SaveChangesAsync();
 
-        List<Enrollment> enrollments = validCourseIds
-            .Select(courseId => new Enrollment
-            {
-                StudentID = student.ID,
-                CourseID = courseId,
-                Grade = null
-            })
-            .ToList();
+        List<Enrollment> enrollments =
+            validCourseIds
+                .Select(courseId => new Enrollment
+                {
+                    StudentID = student.ID,
+                    CourseID = courseId,
+                    Grade = null
+                })
+                .ToList();
 
         _context.Enrollments.AddRange(enrollments);
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] =
-            "The student was created successfully.";
+            $"The student \"{student.FullName}\" was created successfully.";
 
         return RedirectToAction(nameof(Index));
     }
@@ -124,7 +133,8 @@ public class StudentsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
         int id,
-        [Bind("ID,LastName,FirstMidName,EnrollmentDate")]
+        [Bind(
+            "ID,LastName,FirstMidName,EnrollmentDate,DepartmentID")]
         Student formStudent,
         List<int>? selectedCourseIds,
         Dictionary<int, Grade?>? enrollmentGrades)
@@ -137,36 +147,82 @@ public class StudentsController : Controller
         selectedCourseIds ??= new List<int>();
         enrollmentGrades ??= new Dictionary<int, Grade?>();
 
-        List<int> distinctCourseIds = selectedCourseIds
-            .Distinct()
-            .ToList();
+        formStudent.FirstMidName =
+            formStudent.FirstMidName?.Trim()
+            ?? string.Empty;
+
+        formStudent.LastName =
+            formStudent.LastName?.Trim()
+            ?? string.Empty;
+
+        ValidateStudentNames(formStudent);
+
+        if (!formStudent.DepartmentID.HasValue)
+        {
+            ModelState.AddModelError(
+                nameof(formStudent.DepartmentID),
+                "Select a faculty or department.");
+        }
+
+        bool departmentExists = false;
+
+        if (formStudent.DepartmentID.HasValue)
+        {
+            departmentExists =
+                await _context.Departments
+                    .AnyAsync(department =>
+                        department.DepartmentID ==
+                        formStudent.DepartmentID.Value);
+
+            if (!departmentExists)
+            {
+                ModelState.AddModelError(
+                    nameof(formStudent.DepartmentID),
+                    "The selected department does not exist.");
+            }
+        }
+
+        List<int> distinctCourseIds =
+            selectedCourseIds
+                .Distinct()
+                .ToList();
 
         if (distinctCourseIds.Count == 0)
         {
-            TempData["ErrorMessage"] =
-                "The student must be enrolled in at least one course.";
-
-            return RedirectToAction(nameof(Index));
+            ModelState.AddModelError(
+                nameof(selectedCourseIds),
+                "The student must be enrolled in at least one course.");
         }
 
-        List<int> validCourseIds = await _context.Courses
-            .Where(course =>
-                distinctCourseIds.Contains(course.CourseID))
-            .Select(course => course.CourseID)
-            .ToListAsync();
+        List<int> validCourseIds = new();
 
-        if (validCourseIds.Count != distinctCourseIds.Count)
+        if (departmentExists &&
+            formStudent.DepartmentID.HasValue &&
+            distinctCourseIds.Count > 0)
         {
-            TempData["ErrorMessage"] =
-                "One or more selected courses are invalid.";
+            validCourseIds = await _context.Courses
+                .Where(course =>
+                    distinctCourseIds.Contains(
+                        course.CourseID) &&
+                    course.DepartmentID ==
+                    formStudent.DepartmentID.Value)
+                .Select(course => course.CourseID)
+                .ToListAsync();
 
-            return RedirectToAction(nameof(Index));
+            if (validCourseIds.Count !=
+                distinctCourseIds.Count)
+            {
+                ModelState.AddModelError(
+                    nameof(selectedCourseIds),
+                    "The student can only be enrolled in courses from the selected department.");
+            }
         }
 
         if (!ModelState.IsValid)
         {
             TempData["ErrorMessage"] =
-                "The student information or grades are invalid.";
+                GetFirstModelError(
+                    "The student information is invalid.");
 
             return RedirectToAction(nameof(Index));
         }
@@ -182,20 +238,22 @@ public class StudentsController : Controller
             return NotFound();
         }
 
-        // Update the basic student information.
         student.FirstMidName =
-            formStudent.FirstMidName.Trim();
+            formStudent.FirstMidName;
 
         student.LastName =
-            formStudent.LastName.Trim();
+            formStudent.LastName;
 
         student.EnrollmentDate =
             formStudent.EnrollmentDate;
 
+        student.DepartmentID =
+            formStudent.DepartmentID;
+
         HashSet<int> selectedCourseSet =
             validCourseIds.ToHashSet();
 
-        // Remove enrollment records for unchecked courses.
+        // Remove courses that are no longer selected.
         List<Enrollment> enrollmentsToRemove =
             student.Enrollments
                 .Where(enrollment =>
@@ -206,13 +264,14 @@ public class StudentsController : Controller
         _context.Enrollments.RemoveRange(
             enrollmentsToRemove);
 
-        // Update grades for current courses and add new courses.
+        // Add new courses and update grades.
         foreach (int courseId in selectedCourseSet)
         {
             Enrollment? existingEnrollment =
                 student.Enrollments
                     .FirstOrDefault(enrollment =>
-                        enrollment.CourseID == courseId);
+                        enrollment.CourseID ==
+                        courseId);
 
             Grade? selectedGrade = null;
 
@@ -225,13 +284,11 @@ public class StudentsController : Controller
 
             if (existingEnrollment is not null)
             {
-                // Existing enrollment: update its grade.
                 existingEnrollment.Grade =
                     selectedGrade;
             }
             else
             {
-                // Newly selected course: create an enrollment.
                 Enrollment newEnrollment = new()
                 {
                     StudentID = student.ID,
@@ -247,7 +304,7 @@ public class StudentsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] =
-            "The student, courses, and grades were updated successfully.";
+            "The student, department, courses, and grades were updated successfully.";
 
         return RedirectToAction(nameof(Index));
     }
@@ -256,7 +313,8 @@ public class StudentsController : Controller
     [HttpPost]
     [ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public async Task<IActionResult> DeleteConfirmed(
+        int id)
     {
         Student? student = await _context.Students
             .Include(existingStudent =>
@@ -277,9 +335,124 @@ public class StudentsController : Controller
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] =
-            "The student was deleted successfully.";
+            $"The student \"{student.FullName}\" was deleted successfully.";
 
         return RedirectToAction(nameof(Index));
+    }
+
+    private static void NormalizeCreateModel(
+        CreateStudentViewModel model)
+    {
+        model.FirstMidName =
+            model.FirstMidName?.Trim()
+            ?? string.Empty;
+
+        model.LastName =
+            model.LastName?.Trim()
+            ?? string.Empty;
+
+        model.SelectedCourseIds ??=
+            new List<int>();
+    }
+
+    private async Task<bool>
+        ValidateCreateDepartmentAsync(
+            CreateStudentViewModel model)
+    {
+        if (!model.DepartmentID.HasValue)
+        {
+            ModelState.AddModelError(
+                nameof(model.DepartmentID),
+                "Select a faculty or department.");
+
+            return false;
+        }
+
+        bool departmentExists =
+            await _context.Departments
+                .AnyAsync(department =>
+                    department.DepartmentID ==
+                    model.DepartmentID.Value);
+
+        if (!departmentExists)
+        {
+            ModelState.AddModelError(
+                nameof(model.DepartmentID),
+                "The selected department does not exist.");
+        }
+
+        return departmentExists;
+    }
+
+    private async Task<List<int>>
+        ValidateCreateCoursesAsync(
+            CreateStudentViewModel model,
+            List<int> selectedCourseIds,
+            bool departmentExists)
+    {
+        if (!departmentExists ||
+            !model.DepartmentID.HasValue ||
+            selectedCourseIds.Count == 0)
+        {
+            return new List<int>();
+        }
+
+        List<int> validCourseIds =
+            await _context.Courses
+                .Where(course =>
+                    selectedCourseIds.Contains(
+                        course.CourseID) &&
+                    course.DepartmentID ==
+                    model.DepartmentID.Value)
+                .Select(course =>
+                    course.CourseID)
+                .ToListAsync();
+
+        if (validCourseIds.Count !=
+            selectedCourseIds.Count)
+        {
+            ModelState.AddModelError(
+                nameof(model.SelectedCourseIds),
+                "You can only select courses assigned to the selected department.");
+        }
+
+        return validCourseIds;
+    }
+
+    private void ValidateStudentNames(
+        Student student)
+    {
+        if (string.IsNullOrWhiteSpace(
+                student.FirstMidName))
+        {
+            ModelState.AddModelError(
+                nameof(student.FirstMidName),
+                "First name is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                student.LastName))
+        {
+            ModelState.AddModelError(
+                nameof(student.LastName),
+                "Last name is required.");
+        }
+    }
+
+    private string GetFirstModelError(
+        string defaultMessage)
+    {
+        string? firstError =
+            ModelState.Values
+                .SelectMany(value =>
+                    value.Errors)
+                .Select(error =>
+                    error.ErrorMessage)
+                .FirstOrDefault(message =>
+                    !string.IsNullOrWhiteSpace(
+                        message));
+
+        return firstError ?? defaultMessage;
     }
 
     private async Task<List<CourseSelectionViewModel>>
@@ -287,15 +460,51 @@ public class StudentsController : Controller
     {
         return await _context.Courses
             .AsNoTracking()
-            .OrderBy(course => course.Title)
-            .Select(course => new CourseSelectionViewModel
-            {
-                CourseID = course.CourseID,
-                Title = course.Title,
-                Credits = course.Credits,
-                EnrolledStudentCount =
-                    course.Enrollments.Count()
-            })
+            .OrderBy(course =>
+                course.Title)
+            .Select(course =>
+                new CourseSelectionViewModel
+                {
+                    CourseID =
+                        course.CourseID,
+
+                    Title =
+                        course.Title,
+
+                    Credits =
+                        course.Credits,
+
+                    DepartmentID =
+                        course.DepartmentID,
+
+                    DepartmentName =
+                        course.Department != null
+                            ? course.Department.Name
+                            : "No department",
+
+                    EnrolledStudentCount =
+                        course.Enrollments.Count()
+                })
+            .ToListAsync();
+    }
+
+    private async Task<
+        List<DepartmentSelectionViewModel>>
+        GetDepartmentSelectionsAsync()
+    {
+        return await _context.Departments
+            .AsNoTracking()
+            .OrderBy(department =>
+                department.Name)
+            .Select(department =>
+                new DepartmentSelectionViewModel
+                {
+                    DepartmentID =
+                        department.DepartmentID,
+
+                    Name =
+                        department.Name
+                })
             .ToListAsync();
     }
 }

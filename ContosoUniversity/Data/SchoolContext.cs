@@ -40,6 +40,12 @@ public class SchoolContext : DbContext
             .HasForeignKey(instructor => instructor.DepartmentID)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<Student>()
+            .HasOne(student => student.Department)
+            .WithMany(department => department.Students)
+            .HasForeignKey(student => student.DepartmentID)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<CourseInstructor>()
             .HasKey(courseInstructor => new
             {
@@ -48,19 +54,13 @@ public class SchoolContext : DbContext
             });
 
         modelBuilder.Entity<CourseInstructor>()
-            .HasOne(courseInstructor =>
-                courseInstructor.Course)
-            .WithMany(course =>
-                course.CourseInstructors)
-            .HasForeignKey(courseInstructor =>
-                courseInstructor.CourseID);
+            .HasOne(courseInstructor => courseInstructor.Course)
+            .WithMany(course => course.CourseInstructors)
+            .HasForeignKey(courseInstructor => courseInstructor.CourseID);
 
         modelBuilder.Entity<CourseInstructor>()
-            .HasOne(courseInstructor =>
-                courseInstructor.Instructor)
-            .WithMany(instructor =>
-                instructor.CourseInstructors)
-            .HasForeignKey(courseInstructor =>
-                courseInstructor.InstructorID);
+            .HasOne(courseInstructor => courseInstructor.Instructor)
+            .WithMany(instructor => instructor.CourseInstructors)
+            .HasForeignKey(courseInstructor => courseInstructor.InstructorID);
     }
 }

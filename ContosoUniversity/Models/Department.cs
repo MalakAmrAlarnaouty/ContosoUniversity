@@ -28,4 +28,7 @@ public class Department
 
     public ICollection<Instructor> Instructors { get; set; }
         = new List<Instructor>();
+
+    public ICollection<Student> Students { get; set; }
+    = new List<Student>();
 }

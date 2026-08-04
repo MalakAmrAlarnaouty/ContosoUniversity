@@ -4,241 +4,365 @@
     ViewData["Title"] = "Create Student";
 }
 
-<h2>Create Student</h2>
+<div class="d-flex flex-column
+    flex-md-row
+    justify-content-between
+    align-items-md-center
+    gap-3
+    mb-4">
 
-<p class="text-muted">
-    Enter the student information and select their courses.
-</p>
+    <div>
+        <h2 class="mb-1">Create Student</h2>
 
-<form asp-action="Create" method="post">
-
-    <div asp-validation-summary="ModelOnly"
-         class="alert alert-danger">
+        <p class="text-muted mb-0">
+            Enter the student information, select their department,
+            and choose available courses.
+        </p>
     </div>
 
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <strong>Student Information</strong>
-        </div>
+    <a asp-action="Index"
+       class="btn btn-outline-secondary">
+        Back to Students
+    </a>
+</div>
 
-        <div class="card-body">
-            <div class="row">
+<div class="row justify-content-center">
 
-                <div class="col-md-6 mb-3">
-                    <label asp-for="FirstMidName"
-                           class="form-label">
-                    </label>
+    <div class="col-lg-10">
 
-                    <input asp-for="FirstMidName"
-                           class="form-control"
-                           placeholder="Enter first name" />
+        <form asp-action="Create"
+              method="post">
 
-                    <span asp-validation-for="FirstMidName"
-                          class="text-danger">
-                    </span>
+            <div asp-validation-summary="ModelOnly"
+                 class="alert alert-danger">
+            </div>
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header">
+                    <strong>Student Information</strong>
                 </div>
 
-                <div class="col-md-6 mb-3">
-                    <label asp-for="LastName"
-                           class="form-label">
-                    </label>
+                <div class="card-body">
 
-                    <input asp-for="LastName"
-                           class="form-control"
-                           placeholder="Enter last name" />
+                    <div class="row">
 
-                    <span asp-validation-for="LastName"
-                          class="text-danger">
-                    </span>
-                </div>
+                        <div class="col-md-6 mb-3">
 
-                <div class="col-md-6 mb-3">
-                    <label asp-for="EnrollmentDate"
-                           class="form-label">
-                    </label>
+                            <label asp-for="FirstMidName"
+                                   class="form-label">
+                            </label>
 
-                    <input asp-for="EnrollmentDate"
-                           type="date"
-                           class="form-control" />
+                            <input asp-for="FirstMidName"
+                                   class="form-control"
+                                   placeholder="Enter first name" />
 
-                    <span asp-validation-for="EnrollmentDate"
-                          class="text-danger">
-                    </span>
+                            <span asp-validation-for="FirstMidName"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="LastName"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="LastName"
+                                   class="form-control"
+                                   placeholder="Enter last name" />
+
+                            <span asp-validation-for="LastName"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="EnrollmentDate"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="EnrollmentDate"
+                                   type="date"
+                                   class="form-control" />
+
+                            <span asp-validation-for="EnrollmentDate"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="DepartmentID"
+                                   class="form-label">
+                            </label>
+
+                            <select asp-for="DepartmentID"
+                                    class="form-select">
+
+                                <option value="">
+                                    Select faculty or department
+                                </option>
+
+                                @foreach (var department in Model.Departments)
+                                {
+                                    <option value="@department.DepartmentID"
+                                            selected="@(Model.DepartmentID ==
+                                                                                        department.DepartmentID
+                                                                                        ? "selected"
+                                                                                        : null)">
+                                        @department.Name
+                                    </option>
+                                }
+
+                            </select>
+
+                            <span asp-validation-for="DepartmentID"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
             </div>
-        </div>
-    </div>
 
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <strong>Select Courses</strong>
-        </div>
+            <div class="card shadow-sm mb-4">
 
-        <div class="card-body">
-
-            <p class="text-muted">
-                Select one or more courses for this student.
-            </p>
-
-            <span asp-validation-for="SelectedCourseIds"
-                  class="text-danger d-block mb-3">
-            </span>
-
-            @if (Model.Courses.Count == 0)
-            {
-                <div class="alert alert-secondary mb-0">
-                    No courses are currently available.
+                <div class="card-header">
+                    <strong>Available Courses</strong>
                 </div>
-            }
-            else
-            {
-                <div class="row g-3">
 
-                    @foreach (var course in Model.Courses)
-                    {
-                        bool selected =
-                            Model.SelectedCourseIds.Contains(
-                                course.CourseID);
+                <div class="card-body">
 
-                        <div class="col-md-6 col-lg-4">
+                    <div id="selectDepartmentMessage"
+                         class="alert alert-info mb-0">
 
-                            <input type="checkbox"
-                                   class="course-checkbox"
-                                   id="course-@course.CourseID"
-                                   name="SelectedCourseIds"
-                                   value="@course.CourseID"
-                                   checked="@(selected ? "checked" : null)" />
+                        Select a faculty or department to see its courses.
 
-                            <label for="course-@course.CourseID"
-                                   class="card course-selection-card h-100">
+                    </div>
 
-                                <div class="card-body">
+                    <div id="noDepartmentCoursesMessage"
+                         class="alert alert-warning d-none mb-0">
 
-                                    <div class="d-flex
-                                        justify-content-between
-                                        align-items-start
-                                        mb-3">
+                        No courses are assigned to this department.
 
-                                        <div>
-                                            <h5 class="card-title mb-1">
-                                                @course.Title
-                                            </h5>
+                    </div>
 
-                                            <small class="text-muted">
-                                                Course ID:
-                                                @course.CourseID
-                                            </small>
+                    <div id="courseSelectionContainer"
+                         class="row d-none">
+
+                        @foreach (var course in Model.Courses)
+                        {
+                            bool isChecked =
+                                Model.SelectedCourseIds.Contains(
+                                    course.CourseID);
+
+                            <div class="col-md-6 mb-3 course-option"
+                                 data-department-id="@course.DepartmentID">
+
+                                <input type="checkbox"
+                                       id="course-@course.CourseID"
+                                       name="SelectedCourseIds"
+                                       value="@course.CourseID"
+                                       class="visually-hidden course-checkbox"
+                                       checked="@(isChecked ? "checked" : null)" />
+
+                                <label for="course-@course.CourseID"
+                                       class="card h-100 course-selection-card">
+
+                                    <div class="card-body">
+
+                                        <div class="d-flex
+                                            justify-content-between
+                                            align-items-start
+                                            gap-2">
+
+                                            <div>
+
+                                                <h5 class="card-title mb-1">
+                                                    @course.Title
+                                                </h5>
+
+                                                <div class="text-muted">
+                                                    Course ID:
+                                                    @course.CourseID
+                                                </div>
+
+                                            </div>
+
+                                            <span class="badge bg-primary">
+                                                @course.Credits credits
+                                            </span>
+
                                         </div>
 
-                                        <span class="badge bg-primary
-                                            selected-badge">
-                                            Selected
-                                        </span>
+                                        <hr />
+
+                                        <small class="text-muted">
+                                            Currently enrolled:
+                                            @course.EnrolledStudentCount
+                                        </small>
+
                                     </div>
 
-                                    <div class="d-flex
-                                        justify-content-between
-                                        border-top
-                                        pt-3">
+                                </label>
 
-                                        <div>
-                                            <small class="text-muted
-                                                d-block">
-                                                Credits
-                                            </small>
+                            </div>
+                        }
 
-                                            <strong>
-                                                @course.Credits
-                                            </strong>
-                                        </div>
+                    </div>
 
-                                        <div class="text-end">
-                                            <small class="text-muted
-                                                d-block">
-                                                Students
-                                            </small>
-
-                                            <strong>
-                                                @course.EnrolledStudentCount
-                                            </strong>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                    }
+                    <span asp-validation-for="SelectedCourseIds"
+                          class="text-danger">
+                    </span>
 
                 </div>
-            }
-        </div>
+
+            </div>
+
+            <div class="d-flex gap-2 mb-4">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Create Student
+                </button>
+
+                <a asp-action="Index"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
     </div>
 
-    <div class="d-flex gap-2 mb-4">
-        <button type="submit"
-                class="btn btn-primary">
-            Create Student
-        </button>
-
-        <a asp-action="Index"
-           class="btn btn-secondary">
-            Cancel
-        </a>
-    </div>
-
-</form>
+</div>
 
 <style>
-    .course-checkbox {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-    }
-
     .course-selection-card {
         cursor: pointer;
         border: 2px solid transparent;
-        transition:
-            border-color 0.15s ease,
-            background-color 0.15s ease,
-            transform 0.15s ease;
+        transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
     }
 
-    .course-selection-card:hover {
-        border-color: var(--bs-primary);
-        transform: translateY(-2px);
-    }
-
-    .selected-badge {
-        visibility: hidden;
-    }
+        .course-selection-card:hover {
+            border-color: var(--bs-primary);
+            transform: translateY(-2px);
+        }
 
     .course-checkbox:checked + .course-selection-card {
         border-color: var(--bs-primary);
-        background-color: rgba(
-            var(--bs-primary-rgb),
-            0.08
-        );
+        background-color: rgba(var(--bs-primary-rgb), .08);
     }
 
-    .course-checkbox:checked
-    + .course-selection-card
-    .selected-badge {
-        visibility: visible;
-    }
-
-    .course-checkbox:focus-visible
-    + .course-selection-card {
-        outline: 3px solid rgba(
-            var(--bs-primary-rgb),
-            0.35
-        );
-
+    .course-checkbox:focus-visible + .course-selection-card {
+        outline: 3px solid rgba(var(--bs-primary-rgb), .35);
         outline-offset: 2px;
     }
 </style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                const departmentSelect =
+                    document.getElementById("DepartmentID");
+
+                const courseContainer =
+                    document.getElementById(
+                        "courseSelectionContainer"
+                    );
+
+                const selectDepartmentMessage =
+                    document.getElementById(
+                        "selectDepartmentMessage"
+                    );
+
+                const noCoursesMessage =
+                    document.getElementById(
+                        "noDepartmentCoursesMessage"
+                    );
+
+                const courseOptions =
+                    document.querySelectorAll(
+                        ".course-option"
+                    );
+
+                function filterCourses() {
+                    const selectedDepartmentId =
+                        departmentSelect.value;
+
+                    let visibleCourseCount = 0;
+
+                    courseOptions.forEach(function (option) {
+                        const checkbox =
+                            option.querySelector(
+                                ".course-checkbox"
+                            );
+
+                        const belongsToDepartment =
+                            selectedDepartmentId !== "" &&
+                            option.dataset.departmentId ===
+                            selectedDepartmentId;
+
+                        option.classList.toggle(
+                            "d-none",
+                            !belongsToDepartment
+                        );
+
+                        checkbox.disabled =
+                            !belongsToDepartment;
+
+                        if (!belongsToDepartment) {
+                            checkbox.checked = false;
+                        }
+
+                        if (belongsToDepartment) {
+                            visibleCourseCount++;
+                        }
+                    });
+
+                    const departmentSelected =
+                        selectedDepartmentId !== "";
+
+                    selectDepartmentMessage.classList.toggle(
+                        "d-none",
+                        departmentSelected
+                    );
+
+                    courseContainer.classList.toggle(
+                        "d-none",
+                        !departmentSelected ||
+                        visibleCourseCount === 0
+                    );
+
+                    noCoursesMessage.classList.toggle(
+                        "d-none",
+                        !departmentSelected ||
+                        visibleCourseCount > 0
+                    );
+                }
+
+                departmentSelect.addEventListener(
+                    "change",
+                    filterCourses
+                );
+
+                filterCourses();
+            }
+        );
+    </script>
 }
