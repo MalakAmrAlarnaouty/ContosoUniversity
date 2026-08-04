@@ -26,7 +26,7 @@ public class StudentsController : Controller
             .ThenBy(student => student.FirstMidName)
             .ToListAsync();
 
-        // Used inside the Edit Student modal.
+        // Used by the course cards inside the Edit Student modal.
         ViewBag.AllCourses = await _context.Courses
             .AsNoTracking()
             .Include(course => course.Enrollments)
@@ -126,7 +126,8 @@ public class StudentsController : Controller
         int id,
         [Bind("ID,LastName,FirstMidName,EnrollmentDate")]
         Student formStudent,
-        List<int>? selectedCourseIds)
+        List<int>? selectedCourseIds,
+        Dictionary<int, Grade?>? enrollmentGrades)
     {
         if (id != formStudent.ID)
         {
@@ -134,6 +135,7 @@ public class StudentsController : Controller
         }
 
         selectedCourseIds ??= new List<int>();
+        enrollmentGrades ??= new Dictionary<int, Grade?>();
 
         List<int> distinctCourseIds = selectedCourseIds
             .Distinct()
@@ -164,7 +166,7 @@ public class StudentsController : Controller
         if (!ModelState.IsValid)
         {
             TempData["ErrorMessage"] =
-                "The student information is invalid.";
+                "The student information or grades are invalid.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -180,18 +182,20 @@ public class StudentsController : Controller
             return NotFound();
         }
 
-        student.FirstMidName = formStudent.FirstMidName.Trim();
-        student.LastName = formStudent.LastName.Trim();
-        student.EnrollmentDate = formStudent.EnrollmentDate;
+        // Update the basic student information.
+        student.FirstMidName =
+            formStudent.FirstMidName.Trim();
+
+        student.LastName =
+            formStudent.LastName.Trim();
+
+        student.EnrollmentDate =
+            formStudent.EnrollmentDate;
 
         HashSet<int> selectedCourseSet =
             validCourseIds.ToHashSet();
 
-        HashSet<int> currentCourseSet = student.Enrollments
-            .Select(enrollment => enrollment.CourseID)
-            .ToHashSet();
-
-        // Remove courses that were unchecked.
+        // Remove enrollment records for unchecked courses.
         List<Enrollment> enrollmentsToRemove =
             student.Enrollments
                 .Where(enrollment =>
@@ -202,25 +206,48 @@ public class StudentsController : Controller
         _context.Enrollments.RemoveRange(
             enrollmentsToRemove);
 
-        // Add newly selected courses.
-        List<Enrollment> enrollmentsToAdd =
-            selectedCourseSet
-                .Where(courseId =>
-                    !currentCourseSet.Contains(courseId))
-                .Select(courseId => new Enrollment
+        // Update grades for current courses and add new courses.
+        foreach (int courseId in selectedCourseSet)
+        {
+            Enrollment? existingEnrollment =
+                student.Enrollments
+                    .FirstOrDefault(enrollment =>
+                        enrollment.CourseID == courseId);
+
+            Grade? selectedGrade = null;
+
+            if (enrollmentGrades.TryGetValue(
+                    courseId,
+                    out Grade? submittedGrade))
+            {
+                selectedGrade = submittedGrade;
+            }
+
+            if (existingEnrollment is not null)
+            {
+                // Existing enrollment: update its grade.
+                existingEnrollment.Grade =
+                    selectedGrade;
+            }
+            else
+            {
+                // Newly selected course: create an enrollment.
+                Enrollment newEnrollment = new()
                 {
                     StudentID = student.ID,
                     CourseID = courseId,
-                    Grade = null
-                })
-                .ToList();
+                    Grade = selectedGrade
+                };
 
-        _context.Enrollments.AddRange(enrollmentsToAdd);
+                _context.Enrollments.Add(
+                    newEnrollment);
+            }
+        }
 
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] =
-            "The student and course enrollments were updated successfully.";
+            "The student, courses, and grades were updated successfully.";
 
         return RedirectToAction(nameof(Index));
     }

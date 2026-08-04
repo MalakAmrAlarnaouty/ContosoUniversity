@@ -2,96 +2,161 @@
 @using ContosoUniversity.Models
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Students";
 
     List<Course> allCourses =
         ViewBag.AllCourses as List<Course>
         ?? new List<Course>();
+
+    var students = Model.ToList();
 }
 
-<h2>Index</h2>
+<div class="d-flex flex-column
+            flex-md-row
+            justify-content-between
+            align-items-md-center
+            gap-3
+            mb-4">
+
+    <div>
+        <h2 class="mb-1">Students</h2>
+
+        <p class="text-muted mb-0">
+            View and manage students, courses, and grades.
+        </p>
+    </div>
+
+    <a asp-action="Create"
+       class="btn btn-primary">
+        Create New Student
+    </a>
+</div>
 
 @if (TempData["SuccessMessage"] is not null)
 {
-    <div class="alert alert-success">
+    <div class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
         @TempData["SuccessMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close">
+        </button>
     </div>
 }
 
 @if (TempData["ErrorMessage"] is not null)
 {
-    <div class="alert alert-danger">
+    <div class="alert alert-danger alert-dismissible fade show"
+         role="alert">
+
         @TempData["ErrorMessage"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close">
+        </button>
     </div>
 }
 
-<p>
-    <a asp-action="Create"
-       class="btn btn-primary">
-        Create New
-    </a>
-</p>
-
-<div class="table-responsive">
-    <table class="table table-hover">
-        <thead class="table-light">
-            <tr>
-                <th>Last Name</th>
-                <th>First Name</th>
-                <th>Enrollment Date</th>
-                <th>Courses</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            @foreach (var student in Model)
-            {
-                <tr>
-                    <td>@student.LastName</td>
-
-                    <td>@student.FirstMidName</td>
-
-                    <td>
-                        @(student.EnrollmentDate.ToString("MM/dd/yyyy"))
-                    </td>
-
-                    <td>
-                        <span class="badge bg-secondary">
-                            @student.Enrollments.Count
-                        </span>
-                    </td>
-
-                    <td>
-                        <button type="button"
-                                class="btn btn-link p-0 align-baseline"
-                                data-bs-toggle="modal"
-                                data-bs-target="#detailsModal-@student.ID">
-                            Details
-                        </button>
-
-                        <span>|</span>
-
-                        <button type="button"
-                                class="btn btn-link text-danger p-0 align-baseline"
-                                data-bs-toggle="modal"
-                                data-bs-target="#deleteModal-@student.ID">
-                            Delete
-                        </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-
-@foreach (var student in Model)
+@if (students.Count == 0)
 {
-    HashSet<int> selectedCourseIds = student.Enrollments
-        .Select(enrollment => enrollment.CourseID)
-        .ToHashSet();
+    <div class="alert alert-secondary">
+        No students are currently available.
 
-    <!-- Details and Edit modal -->
+        <a asp-action="Create"
+           class="alert-link">
+            Create the first student
+        </a>.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>Student List</strong>
+        </div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>Last Name</th>
+                            <th>First Name</th>
+                            <th>Enrollment Date</th>
+                            <th>Courses</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var student in students)
+                        {
+                            <tr>
+
+                                <td>
+                                    @student.LastName
+                                </td>
+
+                                <td>
+                                    @student.FirstMidName
+                                </td>
+
+                                <td>
+                                    @(student.EnrollmentDate.ToString("MM/dd/yyyy"))
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-secondary rounded-pill">
+                                        @student.Enrollments.Count
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-link p-0 align-baseline"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#detailsModal-@student.ID">
+
+                                        Details
+                                    </button>
+
+                                    <span>|</span>
+
+                                    <button type="button"
+                                            class="btn btn-link text-danger p-0 align-baseline"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteModal-@student.ID">
+
+                                        Delete
+                                    </button>
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    </div>
+}
+
+@foreach (var student in students)
+{
+    <!-- Details and edit modal -->
     <div class="modal fade student-modal"
          id="detailsModal-@student.ID"
          data-student-id="@student.ID"
@@ -99,12 +164,18 @@
          aria-labelledby="detailsModalLabel-@student.ID"
          aria-hidden="true">
 
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog
+                    modal-dialog-centered
+                    modal-dialog-scrollable
+                    modal-xl">
+
             <div class="modal-content">
 
                 <div class="modal-header">
+
                     <h5 class="modal-title"
                         id="detailsModalLabel-@student.ID">
+
                         Student Details
                     </h5>
 
@@ -113,60 +184,108 @@
                             data-bs-dismiss="modal"
                             aria-label="Close">
                     </button>
+
                 </div>
 
                 <div class="modal-body">
 
-                    <!-- Details section -->
+                    <!-- Details view -->
                     <div id="detailsView-@student.ID">
 
                         <div class="text-center mb-4">
-                            <div class="rounded-circle
-                                bg-primary
-                                text-white
-                                d-flex
-                                align-items-center
-                                justify-content-center
-                                mx-auto
-                                mb-3"
-                                 style="width: 80px;
-                                height: 80px;
-                                font-size: 32px;">
 
-                                @(string.IsNullOrWhiteSpace(
-                                    student.FirstMidName)
+                            <div class="rounded-circle
+                                        bg-primary
+                                        text-white
+                                        d-flex
+                                        align-items-center
+                                        justify-content-center
+                                        mx-auto
+                                        mb-3"
+                                 style="width: 80px;
+                                        height: 80px;
+                                        font-size: 32px;">
+
+                                @(string.IsNullOrWhiteSpace(student.FirstMidName)
                                     ? "?"
                                     : student.FirstMidName
                                         .Substring(0, 1)
                                         .ToUpper())
                             </div>
 
-                            <h4>
+                            <h4 class="mb-1">
                                 @student.FirstMidName
                                 @student.LastName
                             </h4>
+
+                            <span class="text-muted">
+                                Student ID: @student.ID
+                            </span>
+
                         </div>
 
                         <div class="row mb-4">
-                            <div class="col-md-4 mb-2">
-                                <strong>Student ID</strong>
-                                <div>@student.ID</div>
+
+                            <div class="col-md-4 mb-3">
+
+                                <div class="card h-100 text-center">
+
+                                    <div class="card-body">
+
+                                        <h6 class="text-muted">
+                                            Student ID
+                                        </h6>
+
+                                        <h4 class="mb-0">
+                                            @student.ID
+                                        </h4>
+
+                                    </div>
+
+                                </div>
+
                             </div>
 
-                            <div class="col-md-4 mb-2">
-                                <strong>Enrollment Date</strong>
-                                <div>
-                                    @(student.EnrollmentDate
-                                        .ToString("MM/dd/yyyy"))
+                            <div class="col-md-4 mb-3">
+
+                                <div class="card h-100 text-center">
+
+                                    <div class="card-body">
+
+                                        <h6 class="text-muted">
+                                            Enrollment Date
+                                        </h6>
+
+                                        <h4 class="mb-0">
+                                            @(student.EnrollmentDate.ToString("MM/dd/yyyy"))
+                                        </h4>
+
+                                    </div>
+
                                 </div>
+
                             </div>
 
-                            <div class="col-md-4 mb-2">
-                                <strong>Total Courses</strong>
-                                <div>
-                                    @student.Enrollments.Count
+                            <div class="col-md-4 mb-3">
+
+                                <div class="card h-100 text-center">
+
+                                    <div class="card-body">
+
+                                        <h6 class="text-muted">
+                                            Total Courses
+                                        </h6>
+
+                                        <h4 class="mb-0">
+                                            @student.Enrollments.Count
+                                        </h4>
+
+                                    </div>
+
                                 </div>
+
                             </div>
+
                         </div>
 
                         <h5>Enrolled Courses</h5>
@@ -180,7 +299,9 @@
                         else
                         {
                             <div class="table-responsive">
-                                <table class="table table-striped align-middle">
+
+                                <table class="table table-striped align-middle mb-0">
+
                                     <thead class="table-light">
                                         <tr>
                                             <th>Course ID</th>
@@ -191,6 +312,7 @@
                                     </thead>
 
                                     <tbody>
+
                                         @foreach (
                                             var enrollment in
                                             student.Enrollments
@@ -198,6 +320,7 @@
                                                     enrollment.Course.Title))
                                         {
                                             <tr>
+
                                                 <td>
                                                     @enrollment.CourseID
                                                 </td>
@@ -211,6 +334,7 @@
                                                 </td>
 
                                                 <td>
+
                                                     @if (enrollment.Grade.HasValue)
                                                     {
                                                         <span class="badge bg-success">
@@ -223,16 +347,22 @@
                                                             Not graded
                                                         </span>
                                                     }
+
                                                 </td>
+
                                             </tr>
                                         }
+
                                     </tbody>
+
                                 </table>
+
                             </div>
                         }
+
                     </div>
 
-                    <!-- Edit section -->
+                    <!-- Edit view -->
                     <div id="editView-@student.ID"
                          class="d-none">
 
@@ -245,153 +375,254 @@
                                    name="ID"
                                    value="@student.ID" />
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">
-                                        First Name
-                                    </label>
+                            <div class="card shadow-sm mb-4">
 
-                                    <input type="text"
-                                           name="FirstMidName"
-                                           value="@student.FirstMidName"
-                                           class="form-control"
-                                           required />
+                                <div class="card-header">
+                                    <strong>Student Information</strong>
                                 </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">
-                                        Last Name
-                                    </label>
+                                <div class="card-body">
 
-                                    <input type="text"
-                                           name="LastName"
-                                           value="@student.LastName"
-                                           class="form-control"
-                                           required />
+                                    <div class="row">
+
+                                        <div class="col-md-6 mb-3">
+
+                                            <label for="firstName-@student.ID"
+                                                   class="form-label">
+                                                First Name
+                                            </label>
+
+                                            <input type="text"
+                                                   id="firstName-@student.ID"
+                                                   name="FirstMidName"
+                                                   value="@student.FirstMidName"
+                                                   class="form-control"
+                                                   required />
+
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+
+                                            <label for="lastName-@student.ID"
+                                                   class="form-label">
+                                                Last Name
+                                            </label>
+
+                                            <input type="text"
+                                                   id="lastName-@student.ID"
+                                                   name="LastName"
+                                                   value="@student.LastName"
+                                                   class="form-control"
+                                                   required />
+
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+
+                                            <label for="enrollmentDate-@student.ID"
+                                                   class="form-label">
+                                                Enrollment Date
+                                            </label>
+
+                                            <input type="date"
+                                                   id="enrollmentDate-@student.ID"
+                                                   name="EnrollmentDate"
+                                                   value="@(student.EnrollmentDate.ToString("yyyy-MM-dd"))"
+                                                   class="form-control"
+                                                   required />
+
+                                        </div>
+
+                                    </div>
+
                                 </div>
 
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label">
-                                        Enrollment Date
-                                    </label>
-
-                                    <input type="date"
-                                           name="EnrollmentDate"
-                                           value="@(student.EnrollmentDate.ToString("yyyy-MM-dd"))"
-                                           class="form-control"
-                                           required />
-                                </div>
                             </div>
 
-                            <h5>Select Courses</h5>
+                            <div class="card shadow-sm">
 
-                            <p class="text-muted">
-                                Check or uncheck courses to update
-                                this student's enrollments.
-                            </p>
-
-                            @if (allCourses.Count == 0)
-                            {
-                                <div class="alert alert-secondary">
-                                    No courses are available.
+                                <div class="card-header">
+                                    <strong>Courses and Grades</strong>
                                 </div>
-                            }
-                            else
-                            {
-                                <div class="row g-3">
-                                    @foreach (var course in allCourses)
+
+                                <div class="card-body">
+
+                                    <p class="text-muted">
+                                        Select the courses for this student and
+                                        choose a grade for each selected course.
+                                    </p>
+
+                                    @if (allCourses.Count == 0)
                                     {
-                                        bool isSelected =
-                                            selectedCourseIds.Contains(
-                                                course.CourseID);
-
-                                        string checkboxId =
-                                            $"student-{student.ID}-course-{course.CourseID}";
-
-                                        <div class="col-md-6">
-                                            <input type="checkbox"
-                                                   class="course-checkbox"
-                                                   id="@checkboxId"
-                                                   name="SelectedCourseIds"
-                                                   value="@course.CourseID"
-                                                   checked="@(isSelected ? "checked" : null)" />
-
-                                            <label for="@checkboxId"
-                                                   class="card course-selection-card h-100">
-
-                                                <div class="card-body">
-                                                    <div class="d-flex
-                                                        justify-content-between
-                                                        align-items-start
-                                                        mb-3">
-
-                                                        <div>
-                                                            <h6 class="mb-1">
-                                                                @course.Title
-                                                            </h6>
-
-                                                            <small class="text-muted">
-                                                                Course ID:
-                                                                @course.CourseID
-                                                            </small>
-                                                        </div>
-
-                                                        <span class="badge
-                                                            bg-primary
-                                                            selected-badge">
-                                                            Selected
-                                                        </span>
-                                                    </div>
-
-                                                    <div class="d-flex
-                                                        justify-content-between
-                                                        border-top
-                                                        pt-3">
-
-                                                        <div>
-                                                            <small class="text-muted d-block">
-                                                                Credits
-                                                            </small>
-
-                                                            <strong>
-                                                                @course.Credits
-                                                            </strong>
-                                                        </div>
-
-                                                        <div class="text-end">
-                                                            <small class="text-muted d-block">
-                                                                Students
-                                                            </small>
-
-                                                            <strong>
-                                                                @course.Enrollments.Count
-                                                            </strong>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </label>
+                                        <div class="alert alert-secondary mb-0">
+                                            No courses are currently available.
                                         </div>
                                     }
+                                    else
+                                    {
+                                        <div class="row g-3">
+
+                                            @foreach (var course in allCourses)
+                                            {
+                                                var currentEnrollment =
+                                                    student.Enrollments
+                                                        .FirstOrDefault(enrollment =>
+                                                            enrollment.CourseID ==
+                                                            course.CourseID);
+
+                                                bool isSelected =
+                                                    currentEnrollment is not null;
+
+                                                string checkboxId =
+                                                    $"student-{student.ID}-course-{course.CourseID}";
+
+                                                string gradeSelectId =
+                                                    $"grade-{student.ID}-{course.CourseID}";
+
+                                                <div class="col-md-6 col-xl-4">
+
+                                                    <input type="checkbox"
+                                                           class="course-checkbox
+                                                                  edit-course-checkbox
+                                                                  visually-hidden"
+                                                           id="@checkboxId"
+                                                           name="SelectedCourseIds"
+                                                           value="@course.CourseID"
+                                                           data-grade-select-id="@gradeSelectId"
+                                                           checked="@(isSelected ? "checked" : null)" />
+
+                                                    <div class="card course-selection-card h-100">
+
+                                                        <label for="@checkboxId"
+                                                               class="card-body course-card-label">
+
+                                                            <div class="d-flex
+                                                                        justify-content-between
+                                                                        align-items-start
+                                                                        gap-2
+                                                                        mb-3">
+
+                                                                <div>
+
+                                                                    <h6 class="mb-1">
+                                                                        @course.Title
+                                                                    </h6>
+
+                                                                    <small class="text-muted">
+                                                                        Course ID:
+                                                                        @course.CourseID
+                                                                    </small>
+
+                                                                </div>
+
+                                                                <span class="badge
+                                                                             bg-primary
+                                                                             selected-badge">
+                                                                    Selected
+                                                                </span>
+
+                                                            </div>
+
+                                                            <div class="row border-top pt-3">
+
+                                                                <div class="col-6">
+
+                                                                    <small class="text-muted d-block">
+                                                                        Credits
+                                                                    </small>
+
+                                                                    <strong>
+                                                                        @course.Credits
+                                                                    </strong>
+
+                                                                </div>
+
+                                                                <div class="col-6 text-end">
+
+                                                                    <small class="text-muted d-block">
+                                                                        Students
+                                                                    </small>
+
+                                                                    <strong>
+                                                                        @course.Enrollments.Count
+                                                                    </strong>
+
+                                                                </div>
+
+                                                            </div>
+
+                                                        </label>
+
+                                                        <div class="card-footer bg-transparent">
+
+                                                            <label for="@gradeSelectId"
+                                                                   class="form-label">
+                                                                Student Grade
+                                                            </label>
+
+                                                            <select id="@gradeSelectId"
+                                                                    name="EnrollmentGrades[@course.CourseID]"
+                                                                    class="form-select course-grade-select"
+                                                                    disabled="@(!isSelected ? "disabled" : null)">
+
+                                                                <option value="">
+                                                                    Not graded
+                                                                </option>
+
+                                                                @foreach (
+                                                                    Grade grade in
+                                                                    Enum.GetValues<Grade>())
+                                                                {
+                                                                    bool gradeSelected =
+                                                                        currentEnrollment?.Grade ==
+                                                                        grade;
+
+                                                                    <option value="@grade"
+                                                                            selected="@(gradeSelected ? "selected" : null)">
+                                                                        @grade
+                                                                    </option>
+                                                                }
+
+                                                            </select>
+
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+                                            }
+
+                                        </div>
+                                    }
+
                                 </div>
-                            }
+
+                            </div>
+
                         </form>
+
                     </div>
+
                 </div>
 
                 <div class="modal-footer">
 
                     <div id="detailsButtons-@student.ID">
+
                         <button type="button"
                                 class="btn btn-secondary"
                                 data-bs-dismiss="modal">
+
                             Close
                         </button>
 
                         <button type="button"
                                 class="btn btn-primary"
                                 onclick="showEditForm(@student.ID)">
+
                             Edit Student
                         </button>
+
                     </div>
 
                     <div id="editButtons-@student.ID"
@@ -399,22 +630,29 @@
 
                         <button type="button"
                                 class="btn btn-secondary"
-                                onclick="showStudentDetails(@student.ID)">
+                                onclick="cancelStudentEdit(@student.ID)">
+
                             Cancel
                         </button>
 
                         <button type="submit"
                                 class="btn btn-success"
                                 form="editForm-@student.ID">
+
                             Save Changes
                         </button>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Delete modal -->
+    <!-- Delete confirmation modal -->
     <div class="modal fade"
          id="deleteModal-@student.ID"
          tabindex="-1"
@@ -422,11 +660,14 @@
          aria-hidden="true">
 
         <div class="modal-dialog modal-dialog-centered">
+
             <div class="modal-content">
 
                 <div class="modal-header">
+
                     <h5 class="modal-title"
                         id="deleteModalLabel-@student.ID">
+
                         Delete Student
                     </h5>
 
@@ -435,20 +676,31 @@
                             data-bs-dismiss="modal"
                             aria-label="Close">
                     </button>
+
                 </div>
 
                 <div class="modal-body">
+
                     Are you sure you want to delete
+
                     <strong>
                         @student.FirstMidName
                         @student.LastName
                     </strong>?
+
+                    <p class="text-danger mt-3 mb-0">
+                        All of this student's course enrollments and grades
+                        will also be deleted.
+                    </p>
+
                 </div>
 
                 <div class="modal-footer">
+
                     <button type="button"
                             class="btn btn-secondary"
                             data-bs-dismiss="modal">
+
                         Cancel
                     </button>
 
@@ -458,31 +710,39 @@
 
                         <button type="submit"
                                 class="btn btn-danger">
-                            Delete
+
+                            Delete Student
                         </button>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
 }
 
 <style>
-    .course-checkbox {
-        position: absolute;
-        opacity: 0;
-    }
-
     .course-selection-card {
-        cursor: pointer;
         border: 2px solid transparent;
-        transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+        transition:
+            border-color 0.15s ease,
+            background-color 0.15s ease,
+            transform 0.15s ease;
     }
 
-        .course-selection-card:hover {
-            border-color: var(--bs-primary);
-            transform: translateY(-2px);
-        }
+    .course-card-label {
+        display: block;
+        cursor: pointer;
+    }
+
+    .course-selection-card:hover {
+        border-color: var(--bs-primary);
+        transform: translateY(-2px);
+    }
 
     .selected-badge {
         visibility: hidden;
@@ -490,17 +750,27 @@
 
     .course-checkbox:checked + .course-selection-card {
         border-color: var(--bs-primary);
-        background-color: rgba(var(--bs-primary-rgb), 0.08);
+        background-color:
+            rgba(var(--bs-primary-rgb), 0.08);
     }
 
-        .course-checkbox:checked + .course-selection-card
-        .selected-badge {
-            visibility: visible;
-        }
+    .course-checkbox:checked
+    + .course-selection-card
+    .selected-badge {
+        visibility: visible;
+    }
 
-    .course-checkbox:focus-visible + .course-selection-card {
-        outline: 3px solid rgba(var(--bs-primary-rgb), 0.35);
+    .course-checkbox:focus-visible
+    + .course-selection-card {
+        outline: 3px solid
+            rgba(var(--bs-primary-rgb), 0.35);
+
         outline-offset: 2px;
+    }
+
+    .course-grade-select:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
     }
 </style>
 
@@ -542,14 +812,95 @@
                 .classList.remove("d-none");
         }
 
+        function updateGradeSelect(
+            courseCheckbox,
+            clearGradeWhenUnchecked) {
+
+            const gradeSelectId =
+                courseCheckbox.dataset.gradeSelectId;
+
+            const gradeSelect =
+                document.getElementById(gradeSelectId);
+
+            if (!gradeSelect) {
+                return;
+            }
+
+            gradeSelect.disabled =
+                !courseCheckbox.checked;
+
+            if (!courseCheckbox.checked &&
+                clearGradeWhenUnchecked) {
+
+                gradeSelect.value = "";
+            }
+        }
+
+        function resetStudentEditForm(studentId) {
+            const form =
+                document.getElementById(
+                    `editForm-${studentId}`
+                );
+
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+
+            form
+                .querySelectorAll(
+                    ".edit-course-checkbox"
+                )
+                .forEach(function (checkbox) {
+
+                    updateGradeSelect(
+                        checkbox,
+                        false
+                    );
+                });
+        }
+
+        function cancelStudentEdit(studentId) {
+            resetStudentEditForm(studentId);
+            showStudentDetails(studentId);
+        }
+
+        document
+            .querySelectorAll(
+                ".edit-course-checkbox"
+            )
+            .forEach(function (checkbox) {
+
+                checkbox.addEventListener(
+                    "change",
+                    function () {
+
+                        updateGradeSelect(
+                            checkbox,
+                            true
+                        );
+                    });
+            });
+
         document
             .querySelectorAll(".student-modal")
-            .forEach(function(modalElement) {
+            .forEach(function (modalElement) {
+
                 modalElement.addEventListener(
                     "hidden.bs.modal",
-                    function() {
+                    function () {
+
+                        const studentId =
+                            modalElement.dataset.studentId;
+
+                        resetStudentEditForm(
+                            studentId
+                        );
+
                         showStudentDetails(
-                            modalElement.dataset.studentId);
+                            studentId
+                        );
                     });
             });
     </script>
