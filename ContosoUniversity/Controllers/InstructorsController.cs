@@ -18,20 +18,28 @@ public class InstructorsController : Controller
     // GET: Instructors
     public async Task<IActionResult> Index()
     {
-        List<Instructor> instructors = await _context.Instructors
-            .AsNoTracking()
-            .Include(instructor => instructor.Department)
-            .Include(instructor => instructor.CourseInstructors)
-            .ThenInclude(courseInstructor => courseInstructor.Course)
-            .OrderBy(instructor => instructor.LastName)
-            .ThenBy(instructor => instructor.FirstMidName)
-            .ToListAsync();
+        List<Instructor> instructors =
+            await _context.Instructors
+                .AsNoTracking()
+                .Include(instructor =>
+                    instructor.Department)
+                .Include(instructor =>
+                    instructor.CourseInstructors)
+                    .ThenInclude(courseInstructor =>
+                        courseInstructor.Course)
+                .OrderBy(instructor =>
+                    instructor.LastName)
+                .ThenBy(instructor =>
+                    instructor.FirstMidName)
+                .ToListAsync();
 
-        ViewBag.TotalInstructors = instructors.Count;
+        ViewBag.TotalInstructors =
+            instructors.Count;
 
-        ViewBag.TotalDepartments = await _context.Departments
-            .AsNoTracking()
-            .CountAsync();
+        ViewBag.TotalDepartments =
+            await _context.Departments
+                .AsNoTracking()
+                .CountAsync();
 
         return View(instructors);
     }
@@ -63,6 +71,7 @@ public class InstructorsController : Controller
         if (!ModelState.IsValid)
         {
             await LoadFormOptionsAsync(model);
+
             return View(model);
         }
 
@@ -76,18 +85,25 @@ public class InstructorsController : Controller
         };
 
         _context.Instructors.Add(instructor);
+
         await _context.SaveChangesAsync();
 
-        List<CourseInstructor> courseAssignments =
-            validCourseIds.Select(courseId =>
-                new CourseInstructor
-                {
-                    InstructorID = instructor.InstructorID,
-                    CourseID = courseId
-                })
-            .ToList();
+        List<CourseInstructor> assignments =
+            validCourseIds
+                .Select(courseId =>
+                    new CourseInstructor
+                    {
+                        InstructorID =
+                            instructor.InstructorID,
 
-        _context.CourseInstructors.AddRange(courseAssignments);
+                        CourseID =
+                            courseId
+                    })
+                .ToList();
+
+        _context.CourseInstructors.AddRange(
+            assignments);
+
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] =
@@ -99,12 +115,13 @@ public class InstructorsController : Controller
     // GET: Instructors/Edit/5
     public async Task<IActionResult> Edit(int id)
     {
-        Instructor? instructor = await _context.Instructors
-            .AsNoTracking()
-            .Include(existingInstructor =>
-                existingInstructor.CourseInstructors)
-            .FirstOrDefaultAsync(existingInstructor =>
-                existingInstructor.InstructorID == id);
+        Instructor? instructor =
+            await _context.Instructors
+                .AsNoTracking()
+                .Include(existingInstructor =>
+                    existingInstructor.CourseInstructors)
+                .FirstOrDefaultAsync(existingInstructor =>
+                    existingInstructor.InstructorID == id);
 
         if (instructor is null)
         {
@@ -113,16 +130,29 @@ public class InstructorsController : Controller
 
         InstructorFormViewModel model = new()
         {
-            InstructorID = instructor.InstructorID,
-            FirstMidName = instructor.FirstMidName,
-            LastName = instructor.LastName,
-            HireDate = instructor.HireDate,
-            OfficeLocation = instructor.OfficeLocation,
-            DepartmentID = instructor.DepartmentID,
-            SelectedCourseIds = instructor.CourseInstructors
-                .Select(courseInstructor =>
-                    courseInstructor.CourseID)
-                .ToList()
+            InstructorID =
+                instructor.InstructorID,
+
+            FirstMidName =
+                instructor.FirstMidName,
+
+            LastName =
+                instructor.LastName,
+
+            HireDate =
+                instructor.HireDate,
+
+            OfficeLocation =
+                instructor.OfficeLocation,
+
+            DepartmentID =
+                instructor.DepartmentID,
+
+            SelectedCourseIds =
+                instructor.CourseInstructors
+                    .Select(courseInstructor =>
+                        courseInstructor.CourseID)
+                    .ToList()
         };
 
         await LoadFormOptionsAsync(model);
@@ -150,25 +180,36 @@ public class InstructorsController : Controller
         if (!ModelState.IsValid)
         {
             await LoadFormOptionsAsync(model);
+
             return View(model);
         }
 
-        Instructor? instructor = await _context.Instructors
-            .Include(existingInstructor =>
-                existingInstructor.CourseInstructors)
-            .FirstOrDefaultAsync(existingInstructor =>
-                existingInstructor.InstructorID == id);
+        Instructor? instructor =
+            await _context.Instructors
+                .Include(existingInstructor =>
+                    existingInstructor.CourseInstructors)
+                .FirstOrDefaultAsync(existingInstructor =>
+                    existingInstructor.InstructorID == id);
 
         if (instructor is null)
         {
             return NotFound();
         }
 
-        instructor.FirstMidName = model.FirstMidName;
-        instructor.LastName = model.LastName;
-        instructor.HireDate = model.HireDate!.Value;
-        instructor.OfficeLocation = model.OfficeLocation;
-        instructor.DepartmentID = model.DepartmentID;
+        instructor.FirstMidName =
+            model.FirstMidName;
+
+        instructor.LastName =
+            model.LastName;
+
+        instructor.HireDate =
+            model.HireDate!.Value;
+
+        instructor.OfficeLocation =
+            model.OfficeLocation;
+
+        instructor.DepartmentID =
+            model.DepartmentID;
 
         HashSet<int> selectedCourseSet =
             validCourseIds.ToHashSet();
@@ -193,12 +234,17 @@ public class InstructorsController : Controller
         {
             if (!existingCourseIds.Contains(courseId))
             {
+                CourseInstructor assignment = new()
+                {
+                    InstructorID =
+                        instructor.InstructorID,
+
+                    CourseID =
+                        courseId
+                };
+
                 _context.CourseInstructors.Add(
-                    new CourseInstructor
-                    {
-                        InstructorID = instructor.InstructorID,
-                        CourseID = courseId
-                    });
+                    assignment);
             }
         }
 
@@ -215,11 +261,12 @@ public class InstructorsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        Instructor? instructor = await _context.Instructors
-            .Include(existingInstructor =>
-                existingInstructor.CourseInstructors)
-            .FirstOrDefaultAsync(existingInstructor =>
-                existingInstructor.InstructorID == id);
+        Instructor? instructor =
+            await _context.Instructors
+                .Include(existingInstructor =>
+                    existingInstructor.CourseInstructors)
+                .FirstOrDefaultAsync(existingInstructor =>
+                    existingInstructor.InstructorID == id);
 
         if (instructor is null)
         {
@@ -239,31 +286,44 @@ public class InstructorsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private void NormalizeModel(
+    private static void NormalizeModel(
         InstructorFormViewModel model)
     {
         model.FirstMidName =
-            model.FirstMidName?.Trim() ?? string.Empty;
+            model.FirstMidName?.Trim()
+            ?? string.Empty;
 
         model.LastName =
-            model.LastName?.Trim() ?? string.Empty;
+            model.LastName?.Trim()
+            ?? string.Empty;
 
         model.OfficeLocation =
-            string.IsNullOrWhiteSpace(model.OfficeLocation)
+            string.IsNullOrWhiteSpace(
+                model.OfficeLocation)
                 ? null
                 : model.OfficeLocation.Trim();
 
-        model.SelectedCourseIds ??= new List<int>();
+        model.SelectedCourseIds ??=
+            new List<int>();
     }
 
-    private async Task<List<int>> ValidateSelectionsAsync(
-        InstructorFormViewModel model)
+    private async Task<List<int>>
+        ValidateSelectionsAsync(
+            InstructorFormViewModel model)
     {
-        if (model.DepartmentID.HasValue)
+        bool departmentExists = false;
+
+        if (!model.DepartmentID.HasValue)
         {
-            bool departmentExists =
-                await _context.Departments.AnyAsync(
-                    department =>
+            ModelState.AddModelError(
+                nameof(model.DepartmentID),
+                "Select a department.");
+        }
+        else
+        {
+            departmentExists =
+                await _context.Departments
+                    .AnyAsync(department =>
                         department.DepartmentID ==
                         model.DepartmentID.Value);
 
@@ -285,18 +345,31 @@ public class InstructorsController : Controller
             return new List<int>();
         }
 
+        if (!departmentExists ||
+            !model.DepartmentID.HasValue)
+        {
+            return new List<int>();
+        }
+
+        // Only accept courses assigned to the
+        // selected instructor department.
         List<int> validCourseIds =
             await _context.Courses
                 .Where(course =>
-                    selectedCourseIds.Contains(course.CourseID))
-                .Select(course => course.CourseID)
+                    selectedCourseIds.Contains(
+                        course.CourseID) &&
+                    course.DepartmentID ==
+                    model.DepartmentID.Value)
+                .Select(course =>
+                    course.CourseID)
                 .ToListAsync();
 
-        if (validCourseIds.Count != selectedCourseIds.Count)
+        if (validCourseIds.Count !=
+            selectedCourseIds.Count)
         {
             ModelState.AddModelError(
                 nameof(model.SelectedCourseIds),
-                "One or more selected courses are invalid.");
+                "The instructor can only teach courses assigned to the selected department.");
         }
 
         return validCourseIds;
@@ -305,14 +378,20 @@ public class InstructorsController : Controller
     private async Task LoadFormOptionsAsync(
         InstructorFormViewModel model)
     {
-        model.Departments = await _context.Departments
-            .AsNoTracking()
-            .OrderBy(department => department.Name)
-            .ToListAsync();
+        model.Departments =
+            await _context.Departments
+                .AsNoTracking()
+                .OrderBy(department =>
+                    department.Name)
+                .ToListAsync();
 
-        model.Courses = await _context.Courses
-            .AsNoTracking()
-            .OrderBy(course => course.Title)
-            .ToListAsync();
+        model.Courses =
+            await _context.Courses
+                .AsNoTracking()
+                .Include(course =>
+                    course.Department)
+                .OrderBy(course =>
+                    course.Title)
+                .ToListAsync();
     }
 }
